@@ -245,13 +245,20 @@ class OverlayService : Service() {
                     val dateObj = sdf.parse(patient.createdAt.split("+")[0].split(".")[0]) // clean up ISO string
                     
                     if (dateObj != null) {
-                        val relativeTime = android.text.format.DateUtils.getRelativeTimeSpanString(
-                            dateObj.time,
-                            System.currentTimeMillis(),
-                            android.text.format.DateUtils.MINUTE_IN_MILLIS,
-                            android.text.format.DateUtils.WEEK_IN_MILLIS * 100, // Force relative time for ~2 years
-                            android.text.format.DateUtils.FORMAT_ABBREV_RELATIVE
-                        )
+                        val now = System.currentTimeMillis()
+                        val diff = now - dateObj.time
+                        val days = java.util.concurrent.TimeUnit.MILLISECONDS.toDays(diff)
+                        
+                        val relativeTime = when {
+                            days < 7 -> android.text.format.DateUtils.getRelativeTimeSpanString(
+                                dateObj.time,
+                                now,
+                                android.text.format.DateUtils.MINUTE_IN_MILLIS
+                            ).toString()
+                            days < 30 -> "${days / 7} weeks ago"
+                            days < 365 -> "${days / 30} months ago"
+                            else -> "${days / 365} years ago"
+                        }
                         
                         val displayFormat = java.text.SimpleDateFormat("dd.MM.yyyy", java.util.Locale.getDefault())
                         displayFormat.timeZone = java.util.TimeZone.getDefault() // Show in local time
