@@ -2,7 +2,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@android:color/white"
+    android:background="@drawable/widget_background"
     android:orientation="vertical"
     android:padding="8dp">
 
@@ -19,7 +19,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="Consultation Stats"
-            android:textColor="@android:color/black"
+            android:textColor="@android:color/white"
             android:textSize="14sp"
             android:textStyle="bold" />
 
@@ -30,15 +30,16 @@
             android:background="?android:attr/selectableItemBackground"
             android:contentDescription="Refresh"
             android:src="@android:drawable/ic_popup_sync"
-            android:tint="@android:color/darker_gray" />
+            android:tint="@android:color/white" />
     </LinearLayout>
 
     <ListView
         android:id="@+id/widget_list"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:divider="@android:color/darker_gray"
-        android:dividerHeight="1dp" />
+        android:scrollbarStyle="insideOverlay"
+        android:divider="@android:color/transparent"
+        android:dividerHeight="8dp" />
 
     <TextView
         android:id="@+id/widget_empty_view"

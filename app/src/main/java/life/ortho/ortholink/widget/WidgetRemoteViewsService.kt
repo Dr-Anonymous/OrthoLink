@@ -93,7 +93,7 @@ class WidgetRemoteViewsFactory(private val context: Context) : RemoteViewsServic
         
         views.setTextViewText(R.id.widget_location_name, item.locationName)
         views.setTextViewText(R.id.widget_pending_count, "Pending: ${item.pendingCount}")
-        views.setTextViewText(R.id.widget_completed_count, "Done: ${item.completedCount}")
+        // Removed Done count as requested
         views.setTextViewText(R.id.widget_total_count, "Total: ${item.totalCount}")
 
         return views
