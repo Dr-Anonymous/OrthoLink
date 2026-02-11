@@ -9,7 +9,6 @@ import life.ortho.ortholink.model.ConsultationRequest
 import life.ortho.ortholink.model.ConsultationResponse
 import life.ortho.ortholink.model.Consultation
 import life.ortho.ortholink.network.SupabaseClient
-import android.content.Intent
 import life.ortho.ortholink.widget.PendingConsultationsWidget
 import java.text.SimpleDateFormat
 import java.util.Date
