@@ -196,22 +196,9 @@ class OverlayService : Service() {
             // Ensure location buttons are visible (parent lin layout is visible by default)
             
             // Populate buttons listeners (same as below)
-             btnClinic.setOnClickListener {
-                val isSunday = java.util.Calendar.getInstance().get(java.util.Calendar.DAY_OF_WEEK) == java.util.Calendar.SUNDAY
-                val time = if (isSunday) "After 4 pm" else "After 7:30 pm"
-                val message = "Dr Samuel Manoj Cherukuri\n98668 12555\n\n$time at  OrthoLife :\nRoad number 3,\nR R Nagar, near RTO office,\nKakinada\n\nLocation:\nhttps://g.co/kgs/6ZEukv"
-                openWhatsApp(phone, message, autoSend = true)
-            }
-
-            btnLaxmi.setOnClickListener {
-                val message = "Dr Samuel Manoj Cherukuri\n98668 12555\n\n9-5 pm at:\nLaxmi Hospital,\nGudarigunta, Kakinada\n\nLocation:\nhttps://g.co/kgs/5Xkr4FU"
-                openWhatsApp(phone, message, autoSend = true)
-            }
-
-            btnBadam.setOnClickListener {
-                val message = "Dr Samuel Manoj Cherukuri\n98668 12555\n\n5-7 pm at:\n Badam clinical laboratory \nhttps://g.co/kgs/eAgkp5S"
-                openWhatsApp(phone, message, autoSend = true)
-            }
+            // Unknown caller setup done in setupLocationButtons called earlier
+             setupLocationButtons(overlayView!!, phone)
+            
             
             // We are done for unknown caller
             try {
@@ -483,22 +470,9 @@ class OverlayService : Service() {
             openWhatsApp(phone, "/", autoSend = false)
         }
 
-        btnClinic.setOnClickListener {
-            val isSunday = java.util.Calendar.getInstance().get(java.util.Calendar.DAY_OF_WEEK) == java.util.Calendar.SUNDAY
-            val time = if (isSunday) "After 4 pm" else "After 7:30 pm"
-            val message = "Dr Samuel Manoj Cherukuri\n98668 12555\n\n$time at  OrthoLife :\nRoad number 3,\nR R Nagar, near RTO office,\nKakinada\n\nLocation:\nhttps://g.co/kgs/6ZEukv"
-            openWhatsApp(phone, message, autoSend = true)
-        }
+        // Known caller setup
+        setupLocationButtons(overlayView!!, phone)
 
-        btnLaxmi.setOnClickListener {
-            val message = "Dr Samuel Manoj Cherukuri\n98668 12555\n\n9-5 pm at:\nLaxmi Hospital,\nGudarigunta, Kakinada\n\nLocation:\nhttps://g.co/kgs/5Xkr4FU"
-            openWhatsApp(phone, message, autoSend = true)
-        }
-
-        btnBadam.setOnClickListener {
-            val message = "Dr Samuel Manoj Cherukuri\n98668 12555\n\n5-7 pm at:\n Badam clinical laboratory \nhttps://g.co/kgs/eAgkp5S"
-            openWhatsApp(phone, message, autoSend = true)
-        }
 
         try {
             windowManager?.addView(overlayView, layoutParams)
@@ -610,6 +584,29 @@ class OverlayService : Service() {
         stopSelf()
         
         android.util.Log.d("OverlayService", "Service stop requested")
+    }
+
+    private fun setupLocationButtons(view: View, phone: String) {
+        val btnClinic = view.findViewById<Button>(R.id.btnClinic)
+        val btnLaxmi = view.findViewById<Button>(R.id.btnLaxmi)
+        val btnBadam = view.findViewById<Button>(R.id.btnBadam)
+
+        btnClinic.setOnClickListener {
+            val isSunday = java.util.Calendar.getInstance().get(java.util.Calendar.DAY_OF_WEEK) == java.util.Calendar.SUNDAY
+            val msgResId = if (isSunday) R.string.msg_clinic_sunday else R.string.msg_clinic_weekday
+            val message = getString(msgResId)
+            openWhatsApp(phone, message, autoSend = true)
+        }
+
+        btnLaxmi.setOnClickListener {
+            val message = getString(R.string.msg_laxmi)
+            openWhatsApp(phone, message, autoSend = true)
+        }
+
+        btnBadam.setOnClickListener {
+            val message = getString(R.string.msg_badam)
+            openWhatsApp(phone, message, autoSend = true)
+        }
     }
 
     private fun openWhatsApp(phone: String, message: String?, autoSend: Boolean = false) {

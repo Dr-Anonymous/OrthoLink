@@ -80,6 +80,9 @@ class PendingConsultationsWidget : AppWidgetProvider() {
             // Also set on the title text itself just in case
             views.setOnClickPendingIntent(R.id.widget_title, refreshPendingIntent)
 
+            // Set template for the list items so clicking them also refreshes
+            views.setPendingIntentTemplate(R.id.widget_list, refreshPendingIntent)
+
             // Instruct the widget manager to update the widget
             appWidgetManager.updateAppWidget(appWidgetId, views)
         }

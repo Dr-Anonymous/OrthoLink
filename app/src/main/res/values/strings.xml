@@ -1,4 +1,9 @@
 <resources>
     <string name="app_name">OrthoLink</string>
     <string name="accessibility_service_description">OrthoLink uses this service to automate sending WhatsApp messages when you click the quick action buttons in the call overlay.</string>
+        
+    <string name="msg_clinic_sunday">Dr Samuel Manoj Cherukuri\n98668 12555\n\nAfter 4 pm at  OrthoLife :\nRoad number 3,\nR R Nagar, near RTO office,\nKakinada\n\nLocation:\nhttps://g.co/kgs/6ZEukv</string>
+    <string name="msg_clinic_weekday">Dr Samuel Manoj Cherukuri\n98668 12555\n\nAfter 7:30 pm at  OrthoLife :\nRoad number 3,\nR R Nagar, near RTO office,\nKakinada\n\nLocation:\nhttps://g.co/kgs/6ZEukv</string>
+    <string name="msg_laxmi">Dr Samuel Manoj Cherukuri\n98668 12555\n\n9-5 pm at:\nLaxmi Hospital,\nGudarigunta, Kakinada\n\nLocation:\nhttps://g.co/kgs/5Xkr4FU</string>
+    <string name="msg_badam">Dr Samuel Manoj Cherukuri\n98668 12555\n\n5-7 pm at:\n Badam clinical laboratory \nhttps://g.co/kgs/eAgkp5S</string>
 </resources>

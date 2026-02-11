@@ -103,6 +103,10 @@ class WidgetRemoteViewsFactory(private val context: Context) : RemoteViewsServic
         // Removed Done count as requested
         views.setTextViewText(R.id.widget_total_count, "Total: ${item.totalCount}")
 
+        // Allow click to trigger the template intent (refresh)
+        val fillInIntent = Intent()
+        views.setOnClickFillInIntent(R.id.widget_item_root, fillInIntent)
+
         return views
     }
 
