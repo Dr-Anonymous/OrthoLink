@@ -22,20 +22,39 @@ class PendingConsultationsWidget : AppWidgetProvider() {
 
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
-        if (intent.action == ACTION_REFRESH) {
-            // Trigger data refresh for all widgets
-            val appWidgetManager = AppWidgetManager.getInstance(context)
-            val componentName = ComponentName(context, PendingConsultationsWidget::class.java)
-            val appWidgetIds = appWidgetManager.getAppWidgetIds(componentName)
-            
-            // This triggers onDataSetChanged() in the service
-            appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetIds, R.id.widget_list)
-            Log.d("Widget", "Refresh triggered")
+        val appWidgetManager = AppWidgetManager.getInstance(context)
+        val componentName = ComponentName(context, PendingConsultationsWidget::class.java)
+        val appWidgetIds = appWidgetManager.getAppWidgetIds(componentName)
+
+        when (intent.action) {
+            ACTION_REFRESH -> {
+                // Show loader on all widgets
+                for (appWidgetId in appWidgetIds) {
+                    val views = RemoteViews(context.packageName, R.layout.widget_pending_consultations)
+                    views.setViewVisibility(R.id.widget_loader, android.view.View.VISIBLE)
+                    appWidgetManager.partiallyUpdateAppWidget(appWidgetId, views)
+                }
+
+                // Trigger data refresh
+                // We use notifyAppWidgetViewDataChanged which triggers onDataSetChanged in the service
+                appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetIds, R.id.widget_list)
+                Log.d("Widget", "Refresh triggered")
+            }
+            ACTION_REFRESH_COMPLETE -> {
+                 // Hide loader on all widgets
+                for (appWidgetId in appWidgetIds) {
+                    val views = RemoteViews(context.packageName, R.layout.widget_pending_consultations)
+                    views.setViewVisibility(R.id.widget_loader, android.view.View.INVISIBLE)
+                    appWidgetManager.partiallyUpdateAppWidget(appWidgetId, views)
+                }
+                Log.d("Widget", "Refresh complete")
+            }
         }
     }
 
     companion object {
         const val ACTION_REFRESH = "life.ortho.ortholink.widget.REFRESH"
+        const val ACTION_REFRESH_COMPLETE = "life.ortho.ortholink.widget.REFRESH_COMPLETE"
 
         fun updateAppWidget(context: Context, appWidgetManager: AppWidgetManager, appWidgetId: Int) {
             val views = RemoteViews(context.packageName, R.layout.widget_pending_consultations)
@@ -45,7 +64,8 @@ class PendingConsultationsWidget : AppWidgetProvider() {
             views.setRemoteAdapter(R.id.widget_list, intent)
             views.setEmptyView(R.id.widget_list, R.id.widget_empty_view)
 
-            // 2. Refresh Button Click -> Broadcast
+            // 2. Title/Background Click -> Refresh
+            // We set it on the title bar container so it's easy to hit
             val refreshIntent = Intent(context, PendingConsultationsWidget::class.java).apply {
                 action = ACTION_REFRESH
             }
@@ -55,17 +75,10 @@ class PendingConsultationsWidget : AppWidgetProvider() {
                 refreshIntent, 
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
-            views.setOnClickPendingIntent(R.id.widget_refresh, refreshPendingIntent)
-
-            // 3. Title Click -> Open App
-            val appIntent = Intent(context, MainActivity::class.java)
-            val appPendingIntent = PendingIntent.getActivity(
-                context, 
-                0, 
-                appIntent, 
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-            views.setOnClickPendingIntent(R.id.widget_title, appPendingIntent)
+            views.setOnClickPendingIntent(R.id.widget_title_bar, refreshPendingIntent)
+            
+            // Also set on the title text itself just in case
+            views.setOnClickPendingIntent(R.id.widget_title, refreshPendingIntent)
 
             // Instruct the widget manager to update the widget
             appWidgetManager.updateAppWidget(appWidgetId, views)

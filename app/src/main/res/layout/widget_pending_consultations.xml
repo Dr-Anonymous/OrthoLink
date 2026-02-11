@@ -7,6 +7,7 @@
     android:padding="8dp">
 
     <LinearLayout
+        android:id="@+id/widget_title_bar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
@@ -18,19 +19,17 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Consultation Stats"
+            android:text="Consultations"
             android:textColor="@android:color/white"
             android:textSize="14sp"
             android:textStyle="bold" />
 
-        <ImageButton
-            android:id="@+id/widget_refresh"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:background="?android:attr/selectableItemBackground"
-            android:contentDescription="Refresh"
-            android:src="@android:drawable/ic_popup_sync"
-            android:tint="@android:color/white" />
+        <ProgressBar
+            android:id="@+id/widget_loader"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:visibility="invisible"
+            android:indeterminateTint="@android:color/white" />
     </LinearLayout>
 
     <ListView

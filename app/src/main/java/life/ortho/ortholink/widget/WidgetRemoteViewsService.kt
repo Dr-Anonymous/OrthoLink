@@ -9,6 +9,8 @@ import life.ortho.ortholink.model.ConsultationRequest
 import life.ortho.ortholink.model.ConsultationResponse
 import life.ortho.ortholink.model.Consultation
 import life.ortho.ortholink.network.SupabaseClient
+import android.content.Intent
+import life.ortho.ortholink.widget.PendingConsultationsWidget
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -76,6 +78,12 @@ class WidgetRemoteViewsFactory(private val context: Context) : RemoteViewsServic
 
         } catch (e: Exception) {
             e.printStackTrace()
+        } finally {
+             // Send broadcast to hide loader
+             val intent = Intent(context, PendingConsultationsWidget::class.java).apply {
+                 action = PendingConsultationsWidget.ACTION_REFRESH_COMPLETE
+             }
+             context.sendBroadcast(intent)
         }
     }
 
