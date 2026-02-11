@@ -248,7 +248,9 @@ class OverlayService : Service() {
                         val relativeTime = android.text.format.DateUtils.getRelativeTimeSpanString(
                             dateObj.time,
                             System.currentTimeMillis(),
-                            android.text.format.DateUtils.MINUTE_IN_MILLIS
+                            android.text.format.DateUtils.MINUTE_IN_MILLIS,
+                            android.text.format.DateUtils.WEEK_IN_MILLIS * 100, // Force relative time for ~2 years
+                            android.text.format.DateUtils.FORMAT_ABBREV_RELATIVE
                         )
                         
                         val displayFormat = java.text.SimpleDateFormat("dd.MM.yyyy", java.util.Locale.getDefault())
@@ -279,6 +281,7 @@ class OverlayService : Service() {
             bindDetail(overlayView!!.findViewById(R.id.layoutVitals), overlayView!!.findViewById(R.id.tvVitals), vitalsText)
 
             // Bind details
+            bindDetail(overlayView!!.findViewById(R.id.layoutReferredBy), overlayView!!.findViewById(R.id.tvReferredBy), patient.referredBy)
             bindDetail(overlayView!!.findViewById(R.id.layoutPersonalNote), overlayView!!.findViewById(R.id.tvPersonalNote), patient.personalNote)
             bindDetail(overlayView!!.findViewById(R.id.layoutComplaints), overlayView!!.findViewById(R.id.tvComplaints), patient.complaints)
             bindDetail(overlayView!!.findViewById(R.id.layoutFindings), overlayView!!.findViewById(R.id.tvFindings), patient.findings)

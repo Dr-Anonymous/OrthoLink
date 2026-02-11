@@ -19,6 +19,7 @@ data class PatientDetails(
     @SerializedName("procedure") val procedure: String?,
     @SerializedName("referred_to") val referredTo: String?,
     @SerializedName("location") val location: String?,
+    @SerializedName("referred_by") val referredBy: String?,
     @SerializedName("bp") val bp: String?,
     @SerializedName("weight") val weight: String?,
     @SerializedName("temperature") val temperature: String?,

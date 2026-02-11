@@ -73,6 +73,9 @@ class MainActivity : AppCompatActivity() {
         }
 
         checkAndRequestPermissions()
+        
+        // Check for updates
+        life.ortho.ortholink.manager.UpdateManager.checkForUpdate(this)
     }
 
     private fun setupWebView() {

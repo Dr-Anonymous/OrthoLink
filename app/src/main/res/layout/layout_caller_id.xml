@@ -10,7 +10,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        android:background="#F5F5F5"
+        android:background="#121212"
         android:padding="16dp">
 
         <!-- Header: Caller Info -->
@@ -20,7 +20,7 @@
             android:layout_height="wrap_content"
             app:cardCornerRadius="12dp"
             app:cardElevation="4dp"
-            app:cardBackgroundColor="#FFFFFF"
+            app:cardBackgroundColor="#1E1E1E"
             android:layout_marginBottom="16dp">
 
             <LinearLayout
@@ -42,7 +42,7 @@
                         android:text="Loading..."
                         android:textSize="20sp"
                         android:textStyle="bold"
-                        android:textColor="#000000"
+                        android:textColor="#FFFFFF"
                         android:ellipsize="end"
                         android:maxLines="1"
                         android:layout_weight="1"/>
@@ -59,13 +59,13 @@
                             android:layout_width="16dp"
                             android:layout_height="16dp"
                             android:src="@drawable/ic_map_pin"
-                            app:tint="#757575"/>
+                            app:tint="#B0BEC5"/>
                         <TextView
                             android:id="@+id/tvLocation"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:textSize="12sp"
-                            android:textColor="#757575"
+                            android:textColor="#B0BEC5"
                             android:layout_marginStart="2dp"/>
                     </LinearLayout>
                 </LinearLayout>
@@ -76,14 +76,14 @@
                     android:layout_height="wrap_content"
                     android:text="Unknown Number"
                     android:textSize="14sp"
-                    android:textColor="#757575" />
+                    android:textColor="#B0BEC5" />
                 
                  <TextView
                     android:id="@+id/tvDate"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:textSize="12sp"
-                    android:textColor="#757575"
+                    android:textColor="#B0BEC5"
                     android:layout_marginTop="4dp"
                     android:visibility="gone"/>
             </LinearLayout>
@@ -108,7 +108,7 @@
                     android:layout_height="wrap_content"
                     android:text="Fetching patient details..."
                     android:textSize="14sp"
-                    android:textColor="#424242"
+                    android:textColor="#E0E0E0"
                     android:layout_marginBottom="8dp"
                     android:visibility="gone"/>
 
@@ -118,7 +118,7 @@
                     android:layout_height="wrap_content"
                     app:cardCornerRadius="12dp"
                     app:cardElevation="4dp"
-                    app:cardBackgroundColor="#FFFFFF"
+                    app:cardBackgroundColor="#1E1E1E"
                     android:layout_marginBottom="16dp"
                     android:visibility="gone">
 
@@ -136,7 +136,7 @@
                             android:layout_height="wrap_content"
                             android:orientation="horizontal"
                             android:background="@drawable/rounded_background"
-                            android:backgroundTint="#F5F5F5"
+                            android:backgroundTint="#333333"
                             android:padding="8dp"
                             android:layout_marginBottom="12dp">
                             <ImageView
@@ -156,13 +156,48 @@
                                     android:text="Vitals"
                                     android:textStyle="bold"
                                     android:textSize="14sp"
+                                    android:textColor="#FFFFFF"
                                     android:layout_marginBottom="2dp"/>
                                 <TextView
                                     android:id="@+id/tvVitals"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:textSize="13sp"
-                                    android:textColor="#616161"/>
+                                    android:textColor="#E0E0E0"/>
+                            </LinearLayout>
+                        </LinearLayout>
+
+                        <!-- Referred By -->
+                        <LinearLayout
+                            android:id="@+id/layoutReferredBy"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:layout_marginBottom="12dp">
+                            <ImageView
+                                android:layout_width="20dp"
+                                android:layout_height="20dp"
+                                android:src="@drawable/ic_file"
+                                android:layout_marginEnd="12dp"
+                                android:layout_marginTop="2dp"
+                                app:tint="#FFFFFF"/>
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="vertical">
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Referred By"
+                                    android:textStyle="bold"
+                                    android:textSize="13sp"
+                                    android:textColor="#B0BEC5"/>
+                                <TextView
+                                    android:id="@+id/tvReferredBy"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:textSize="13sp"
+                                    android:textColor="#EEEEEE"/>
                             </LinearLayout>
                         </LinearLayout>
 
@@ -179,7 +214,7 @@
                                 android:src="@drawable/ic_file"
                                 android:layout_marginEnd="12dp"
                                 android:layout_marginTop="2dp"
-                                app:tint="#000000"/>
+                                app:tint="#FFFFFF"/>
                             <LinearLayout
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
@@ -189,13 +224,14 @@
                                     android:layout_height="wrap_content"
                                     android:text="Doctor's Personal Note"
                                     android:textStyle="bold"
-                                    android:textSize="13sp"/>
+                                    android:textSize="13sp"
+                                    android:textColor="#B0BEC5"/>
                                 <TextView
                                     android:id="@+id/tvPersonalNote"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:textSize="13sp"
-                                    android:textColor="#616161"/>
+                                    android:textColor="#EEEEEE"/>
                             </LinearLayout>
                         </LinearLayout>
 
@@ -212,7 +248,7 @@
                                 android:src="@drawable/ic_stethoscope"
                                 android:layout_marginEnd="12dp"
                                 android:layout_marginTop="2dp"
-                                app:tint="#000000"/>
+                                app:tint="#FFFFFF"/>
                             <LinearLayout
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
@@ -222,13 +258,14 @@
                                     android:layout_height="wrap_content"
                                     android:text="Complaints"
                                     android:textStyle="bold"
-                                    android:textSize="13sp"/>
+                                    android:textSize="13sp"
+                                    android:textColor="#B0BEC5"/>
                                 <TextView
                                     android:id="@+id/tvComplaints"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:textSize="13sp"
-                                    android:textColor="#616161"/>
+                                    android:textColor="#EEEEEE"/>
                             </LinearLayout>
                         </LinearLayout>
 
@@ -245,7 +282,7 @@
                                 android:src="@drawable/ic_file"
                                 android:layout_marginEnd="12dp"
                                 android:layout_marginTop="2dp"
-                                app:tint="#000000"/>
+                                app:tint="#FFFFFF"/>
                             <LinearLayout
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
@@ -255,13 +292,14 @@
                                     android:layout_height="wrap_content"
                                     android:text="Clinical Findings"
                                     android:textStyle="bold"
-                                    android:textSize="13sp"/>
+                                    android:textSize="13sp"
+                                    android:textColor="#B0BEC5"/>
                                 <TextView
                                     android:id="@+id/tvFindings"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:textSize="13sp"
-                                    android:textColor="#616161"/>
+                                    android:textColor="#EEEEEE"/>
                             </LinearLayout>
                         </LinearLayout>
 
@@ -278,7 +316,7 @@
                                 android:src="@drawable/ic_file"
                                 android:layout_marginEnd="12dp"
                                 android:layout_marginTop="2dp"
-                                app:tint="#000000"/>
+                                app:tint="#FFFFFF"/>
                             <LinearLayout
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
@@ -288,13 +326,14 @@
                                     android:layout_height="wrap_content"
                                     android:text="Investigations"
                                     android:textStyle="bold"
-                                    android:textSize="13sp"/>
+                                    android:textSize="13sp"
+                                    android:textColor="#B0BEC5"/>
                                 <TextView
                                     android:id="@+id/tvInvestigations"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:textSize="13sp"
-                                    android:textColor="#616161"/>
+                                    android:textColor="#EEEEEE"/>
                             </LinearLayout>
                         </LinearLayout>
 
@@ -311,7 +350,7 @@
                                 android:src="@drawable/ic_stethoscope"
                                 android:layout_marginEnd="12dp"
                                 android:layout_marginTop="2dp"
-                                app:tint="#000000"/>
+                                app:tint="#FFFFFF"/>
                             <LinearLayout
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
@@ -321,13 +360,14 @@
                                     android:layout_height="wrap_content"
                                     android:text="Diagnosis"
                                     android:textStyle="bold"
-                                    android:textSize="13sp"/>
+                                    android:textSize="13sp"
+                                    android:textColor="#B0BEC5"/>
                                 <TextView
                                     android:id="@+id/tvDiagnosis"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:textSize="13sp"
-                                    android:textColor="#616161"/>
+                                    android:textColor="#EEEEEE"/>
                             </LinearLayout>
                         </LinearLayout>
 
@@ -344,7 +384,7 @@
                                 android:src="@drawable/ic_pill"
                                 android:layout_marginEnd="12dp"
                                 android:layout_marginTop="2dp"
-                                app:tint="#000000"/>
+                                app:tint="#FFFFFF"/>
                             <LinearLayout
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
@@ -354,13 +394,14 @@
                                     android:layout_height="wrap_content"
                                     android:text="Medications"
                                     android:textStyle="bold"
-                                    android:textSize="13sp"/>
+                                    android:textSize="13sp"
+                                    android:textColor="#B0BEC5"/>
                                 <TextView
                                     android:id="@+id/tvMedications"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:textSize="13sp"
-                                    android:textColor="#616161"/>
+                                    android:textColor="#EEEEEE"/>
                             </LinearLayout>
                         </LinearLayout>
 
@@ -377,7 +418,7 @@
                                 android:src="@drawable/ic_file" 
                                 android:layout_marginEnd="12dp"
                                 android:layout_marginTop="2dp"
-                                app:tint="#000000"/>
+                                app:tint="#FFFFFF"/>
                             <LinearLayout
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
@@ -387,13 +428,14 @@
                                     android:layout_height="wrap_content"
                                     android:text="Procedure Done"
                                     android:textStyle="bold"
-                                    android:textSize="13sp"/>
+                                    android:textSize="13sp"
+                                    android:textColor="#B0BEC5"/>
                                 <TextView
                                     android:id="@+id/tvProcedure"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:textSize="13sp"
-                                    android:textColor="#616161"/>
+                                    android:textColor="#EEEEEE"/>
                             </LinearLayout>
                         </LinearLayout>
 
@@ -410,7 +452,7 @@
                                 android:src="@drawable/ic_file"
                                 android:layout_marginEnd="12dp"
                                 android:layout_marginTop="2dp"
-                                app:tint="#000000"/>
+                                app:tint="#FFFFFF"/>
                             <LinearLayout
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
@@ -420,13 +462,14 @@
                                     android:layout_height="wrap_content"
                                     android:text="Advice"
                                     android:textStyle="bold"
-                                    android:textSize="13sp"/>
+                                    android:textSize="13sp"
+                                    android:textColor="#B0BEC5"/>
                                 <TextView
                                     android:id="@+id/tvAdvice"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:textSize="13sp"
-                                    android:textColor="#616161"/>
+                                    android:textColor="#EEEEEE"/>
                             </LinearLayout>
                         </LinearLayout>
 
@@ -443,7 +486,7 @@
                                 android:src="@drawable/ic_calendar"
                                 android:layout_marginEnd="12dp"
                                 android:layout_marginTop="2dp"
-                                app:tint="#000000"/>
+                                app:tint="#FFFFFF"/>
                             <LinearLayout
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
@@ -453,13 +496,14 @@
                                     android:layout_height="wrap_content"
                                     android:text="Follow-up"
                                     android:textStyle="bold"
-                                    android:textSize="13sp"/>
+                                    android:textSize="13sp"
+                                    android:textColor="#B0BEC5"/>
                                 <TextView
                                     android:id="@+id/tvFollowUp"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:textSize="13sp"
-                                    android:textColor="#616161"/>
+                                    android:textColor="#EEEEEE"/>
                             </LinearLayout>
                         </LinearLayout>
 
@@ -473,10 +517,10 @@
                             <ImageView
                                 android:layout_width="20dp"
                                 android:layout_height="20dp"
-                                android:src="@drawable/ic_share" 
+                                android:src="@drawable/ic_file" 
                                 android:layout_marginEnd="12dp"
                                 android:layout_marginTop="2dp"
-                                app:tint="#000000"/>
+                                app:tint="#FFFFFF"/>
                             <LinearLayout
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
@@ -486,13 +530,14 @@
                                     android:layout_height="wrap_content"
                                     android:text="Referred To"
                                     android:textStyle="bold"
-                                    android:textSize="13sp"/>
+                                    android:textSize="13sp"
+                                    android:textColor="#B0BEC5"/>
                                 <TextView
                                     android:id="@+id/tvReferredTo"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:textSize="13sp"
-                                    android:textColor="#616161"/>
+                                    android:textColor="#EEEEEE"/>
                             </LinearLayout>
                         </LinearLayout>
 
@@ -506,7 +551,7 @@
                     android:layout_height="wrap_content"
                     app:cardCornerRadius="12dp"
                     app:cardElevation="4dp"
-                    app:cardBackgroundColor="#FFFFFF"
+                    app:cardBackgroundColor="#1E1E1E"
                     android:layout_marginBottom="16dp"
                     android:visibility="gone">
 
@@ -526,7 +571,7 @@
                                 android:layout_height="20dp"
                                 android:src="@drawable/ic_calendar"
                                 android:layout_marginEnd="12dp"
-                                app:tint="#000000"/>
+                                app:tint="#FFFFFF"/>
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
@@ -645,12 +690,12 @@
                     android:id="@+id/btnMinimize"
                     android:layout_width="64dp"
                     android:layout_height="64dp"
-                    app:backgroundTint="#FFFFFF"
-                    app:strokeColor="#E0E0E0"
+                    app:backgroundTint="#333333"
+                    app:strokeColor="#555555"
                     app:strokeWidth="1dp"
                     app:cornerRadius="32dp"
                     app:icon="@drawable/ic_minimize"
-                    app:iconTint="#000000"
+                    app:iconTint="#FFFFFF"
                     app:iconGravity="textStart"
                     app:iconPadding="0dp"
                     android:insetLeft="0dp"
