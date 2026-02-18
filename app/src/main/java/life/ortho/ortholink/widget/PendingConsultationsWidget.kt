@@ -66,6 +66,9 @@ class PendingConsultationsWidget : AppWidgetProvider() {
         fun updateAppWidget(context: Context, appWidgetManager: AppWidgetManager, appWidgetId: Int) {
             val views = RemoteViews(context.packageName, R.layout.widget_pending_consultations)
 
+            // Ensure loader is hidden by default on regular updates
+            views.setViewVisibility(R.id.widget_loading_overlay, android.view.View.GONE)
+
             // 1. Bind the RemoteViewsService (the list adapter)
             val intent = Intent(context, WidgetRemoteViewsService::class.java)
             views.setRemoteAdapter(R.id.widget_list, intent)
