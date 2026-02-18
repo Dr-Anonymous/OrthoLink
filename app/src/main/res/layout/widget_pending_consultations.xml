@@ -1,52 +1,74 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@drawable/widget_background"
-    android:orientation="vertical"
-    android:padding="8dp">
+    android:layout_height="match_parent">
 
     <LinearLayout
-        android:id="@+id/widget_title_bar"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingBottom="4dp">
+        android:layout_height="match_parent"
+        android:background="@drawable/widget_background"
+        android:orientation="vertical"
+        android:padding="8dp">
+
+        <LinearLayout
+            android:id="@+id/widget_title_bar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingBottom="4dp">
+
+            <TextView
+                android:id="@+id/widget_title"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Consultations"
+                android:textColor="@android:color/white"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <ProgressBar
+                android:id="@+id/widget_loader"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:visibility="invisible"
+                android:indeterminateTint="@android:color/white" />
+        </LinearLayout>
+
+        <ListView
+            android:id="@+id/widget_list"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scrollbarStyle="insideOverlay"
+            android:divider="@android:color/transparent"
+            android:dividerHeight="8dp" />
 
         <TextView
-            android:id="@+id/widget_title"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Consultations"
-            android:textColor="@android:color/white"
-            android:textSize="14sp"
-            android:textStyle="bold" />
+            android:id="@+id/widget_empty_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:text="No consultations for today."
+            android:textColor="@android:color/darker_gray"
+            android:visibility="gone" />
 
-        <ProgressBar
-            android:id="@+id/widget_loader"
-            android:layout_width="20dp"
-            android:layout_height="20dp"
-            android:visibility="invisible"
-            android:indeterminateTint="@android:color/white" />
     </LinearLayout>
 
-    <ListView
-        android:id="@+id/widget_list"
+    <RelativeLayout
+        android:id="@+id/widget_loading_overlay"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:scrollbarStyle="insideOverlay"
-        android:divider="@android:color/transparent"
-        android:dividerHeight="8dp" />
+        android:background="#99000000"
+        android:clickable="true"
+        android:visibility="gone">
 
-    <TextView
-        android:id="@+id/widget_empty_view"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:gravity="center"
-        android:text="No consultations for today."
-        android:textColor="@android:color/darker_gray"
-        android:visibility="gone" />
+        <ProgressBar
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:indeterminateTint="@android:color/white" />
 
-</LinearLayout>
+    </RelativeLayout>
+
+</FrameLayout>

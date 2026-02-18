@@ -28,11 +28,20 @@ class PendingConsultationsWidget : AppWidgetProvider() {
 
         when (intent.action) {
             ACTION_REFRESH -> {
-                // Show loader on all widgets
+                // Show loader on all widgets and disable clicks
                 for (appWidgetId in appWidgetIds) {
                     val views = RemoteViews(context.packageName, R.layout.widget_pending_consultations)
-                    views.setViewVisibility(R.id.widget_loader, android.view.View.VISIBLE)
-                    appWidgetManager.partiallyUpdateAppWidget(appWidgetId, views)
+                    
+                    // Show full screen loader
+                    views.setViewVisibility(R.id.widget_loading_overlay, android.view.View.VISIBLE)
+                    
+                    // Disable clicks to prevent double-click or interaction while loading
+                    views.setOnClickPendingIntent(R.id.widget_title_bar, null)
+                    views.setOnClickPendingIntent(R.id.widget_title, null)
+                    views.setPendingIntentTemplate(R.id.widget_list, null)
+
+                    // Full update to ensure intents are cleared
+                    appWidgetManager.updateAppWidget(appWidgetId, views)
                 }
 
                 // Trigger data refresh
@@ -41,11 +50,9 @@ class PendingConsultationsWidget : AppWidgetProvider() {
                 Log.d("Widget", "Refresh triggered")
             }
             ACTION_REFRESH_COMPLETE -> {
-                 // Hide loader on all widgets
+                 // Hide loader and restore clicks on all widgets
                 for (appWidgetId in appWidgetIds) {
-                    val views = RemoteViews(context.packageName, R.layout.widget_pending_consultations)
-                    views.setViewVisibility(R.id.widget_loader, android.view.View.INVISIBLE)
-                    appWidgetManager.partiallyUpdateAppWidget(appWidgetId, views)
+                    updateAppWidget(context, appWidgetManager, appWidgetId)
                 }
                 Log.d("Widget", "Refresh complete")
             }
