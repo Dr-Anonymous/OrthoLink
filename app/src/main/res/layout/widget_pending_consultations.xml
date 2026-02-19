@@ -7,16 +7,18 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="@drawable/widget_background"
-        android:orientation="vertical"
-        android:padding="8dp">
+        android:orientation="vertical">
 
+        <!-- Title Bar Container with background color -->
         <LinearLayout
             android:id="@+id/widget_title_bar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:background="@color/widget_title_bg"
             android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:paddingBottom="4dp">
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="8dp">
 
             <TextView
                 android:id="@+id/widget_title"
@@ -24,25 +26,31 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="Consultations"
-                android:textColor="@android:color/white"
-                android:textSize="14sp"
+                android:textColor="@color/colorOnPrimary"
+                android:textSize="16sp"
                 android:textStyle="bold" />
 
-            <ProgressBar
-                android:id="@+id/widget_loader"
+            <ImageView
                 android:layout_width="20dp"
                 android:layout_height="20dp"
-                android:visibility="invisible"
-                android:indeterminateTint="@android:color/white" />
+                android:src="@drawable/ic_refresh" 
+                android:contentDescription="Refresh"
+                app:tint="@color/colorOnPrimary"
+                android:visibility="visible"
+                xmlns:app="http://schemas.android.com/apk/res-auto"/> 
+             <!-- Removed widget_loader from here since we use overlay -->
+
         </LinearLayout>
 
         <ListView
             android:id="@+id/widget_list"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:scrollbarStyle="insideOverlay"
-            android:divider="@android:color/transparent"
-            android:dividerHeight="8dp" />
+            android:scrollbarStyle="outsideOverlay"
+            android:padding="4dp"
+            android:divider="@color/transparent"
+            android:dividerHeight="4dp"
+            android:clipToPadding="false" />
 
         <TextView
             android:id="@+id/widget_empty_view"
@@ -50,7 +58,7 @@
             android:layout_height="match_parent"
             android:gravity="center"
             android:text="No consultations for today."
-            android:textColor="@android:color/darker_gray"
+            android:textColor="@color/colorTextSecondary"
             android:visibility="gone" />
 
     </LinearLayout>
@@ -59,7 +67,7 @@
         android:id="@+id/widget_loading_overlay"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#99000000"
+        android:background="#80000000"
         android:clickable="true"
         android:visibility="gone">
 
@@ -67,7 +75,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_centerInParent="true"
-            android:indeterminateTint="@android:color/white" />
+            android:indeterminateTint="@color/colorOnPrimary" />
 
     </RelativeLayout>
 

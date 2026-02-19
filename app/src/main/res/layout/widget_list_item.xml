@@ -1,24 +1,25 @@
-<?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_item_root"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="2dp">
+    android:paddingVertical="8dp"
+    android:paddingHorizontal="4dp">
 
     <TextView
         android:id="@+id/widget_location_name"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Location Name"
-        android:textColor="@android:color/white"
-        android:textSize="13sp"
-        android:textStyle="bold" />
+        style="@style/Widget.OrthoLink.TextView.Title"
+        android:ellipsize="end"
+        android:maxLines="1" />
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:paddingTop="4dp">
 
         <TextView
             android:id="@+id/widget_pending_count"
@@ -26,19 +27,24 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="Pending: 0"
-            android:textColor="#FFB74D" 
-            android:textSize="12sp" />
+            android:textColor="@color/colorError"
+            android:textStyle="bold"
+            android:textSize="13sp" />
 
         <TextView
             android:id="@+id/widget_total_count"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Total: 0"
-            android:textColor="@android:color/white"
-            android:textSize="12sp"
-            android:layout_gravity="end" />
+            style="@style/Widget.OrthoLink.TextView.Caption" />
             
-        <!-- Hidden/Removed widget_completed_count -->
     </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="8dp"
+        android:background="@color/colorDivider"
+        android:alpha="0.5"/>
 
 </LinearLayout>

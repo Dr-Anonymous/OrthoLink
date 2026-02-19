@@ -24,7 +24,7 @@ import java.io.IOException
 
 object UpdateManager {
 
-    private const val GITHUB_REPO = "Dr-Anonymous/OrthoView"
+    private const val GITHUB_REPO = "Dr-Anonymous/OrthoLink"
     private const val DOWNLOAD_FILE_NAME = "OrthoLink_Update.apk"
 
     data class GitHubRelease(

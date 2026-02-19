@@ -13,6 +13,19 @@ android {
         targetSdk 34
         versionCode project.hasProperty('versionCode') ? project.property('versionCode').toInteger() : 1
         versionName project.hasProperty('versionName') ? project.property('versionName') : "1.0"
+
+        Properties properties = new Properties()
+        if (project.rootProject.file('local.properties').exists()) {
+            properties.load(project.rootProject.file('local.properties').newDataInputStream())
+        }
+
+        // Fallback to Environment Variable for CI/CD (GitHub Actions)
+        def supabaseKey = properties.getProperty('SUPABASE_KEY')
+        if (supabaseKey == null || supabaseKey.isEmpty()) {
+            supabaseKey = System.getenv("SUPABASE_KEY") ?: ""
+        }
+        
+        buildConfigField "String", "SUPABASE_KEY", "\"${supabaseKey}\""
     }
 
     signingConfigs {
