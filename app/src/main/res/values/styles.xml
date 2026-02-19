@@ -15,25 +15,29 @@
     </style>
 
     <!-- Widget Specific Styles -->
+    <style name="Widget.OrthoLink.TextView" parent="android:Widget.TextView">
+        <item name="android:fontFamily">sans-serif</item>
+    </style>
+
     <style name="Widget.OrthoLink.Card" parent="Widget.Material3.CardView.Elevated">
         <item name="cardElevation">2dp</item>
         <item name="cardCornerRadius">12dp</item>
         <item name="cardBackgroundColor">@color/colorSurface</item>
     </style>
 
-    <style name="Widget.OrthoLink.TextView.Title">
+    <style name="Widget.OrthoLink.TextView.Title" parent="Widget.OrthoLink.TextView">
         <item name="android:textSize">16sp</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/colorTextPrimary</item>
     </style>
 
-    <style name="Widget.OrthoLink.TextView.Body">
+    <style name="Widget.OrthoLink.TextView.Body" parent="Widget.OrthoLink.TextView">
         <item name="android:textSize">14sp</item>
         <item name="android:textColor">@color/colorTextPrimary</item>
         <item name="android:alpha">0.87</item>
     </style>
 
-    <style name="Widget.OrthoLink.TextView.Caption">
+    <style name="Widget.OrthoLink.TextView.Caption" parent="Widget.OrthoLink.TextView">
         <item name="android:textSize">12sp</item>
         <item name="android:textColor">@color/colorTextSecondary</item>
     </style>
