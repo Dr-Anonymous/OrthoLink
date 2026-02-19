@@ -48,7 +48,7 @@
             android:layout_height="match_parent"
             android:scrollbarStyle="outsideOverlay"
             android:padding="4dp"
-            android:divider="@color/transparent"
+            android:divider="@android:color/transparent"
             android:dividerHeight="4dp"
             android:clipToPadding="false" />
 
