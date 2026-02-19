@@ -1,32 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Primary Brand Colors (Deep Blue) -->
-    <color name="colorPrimary">#1976D2</color>
-    <color name="colorPrimaryDark">#0D47A1</color>
+    <!-- Primary Brand Colors (Dark Theme) -->
+    <color name="colorPrimary">#000000</color>
+    <color name="colorPrimaryDark">#000000</color>
     <color name="colorOnPrimary">#FFFFFF</color>
 
-    <!-- Secondary Accent Colors (Teal/Green) -->
-    <color name="colorSecondary">#00796B</color>
-    <color name="colorSecondaryVariant">#004D40</color>
-    <color name="colorOnSecondary">#FFFFFF</color>
+    <!-- Secondary Accent Colors (Orange) -->
+    <color name="colorSecondary">#FFB74D</color> <!-- Lighter Orange for Dark Mode -->
+    <color name="colorSecondaryVariant">#F57C00</color>
+    <color name="colorOnSecondary">#000000</color>
 
     <!-- Backgrounds & Surfaces -->
-    <color name="colorSurface">#FFFFFF</color>
-    <color name="colorOnSurface">#121212</color>
-    <color name="colorBackground">#F5F5F5</color>
-    <color name="colorOnBackground">#121212</color>
+    <color name="colorSurface">#121212</color>
+    <color name="colorOnSurface">#FFFFFF</color>
+    <color name="colorBackground">#000000</color>
+    <color name="colorOnBackground">#FFFFFF</color>
     
     <!-- Status & Alerts -->
-    <color name="colorError">#B00020</color>
-    <color name="colorOnError">#FFFFFF</color>
+    <color name="colorError">#CF6679</color>
+    <color name="colorOnError">#000000</color>
     
     <!-- Neutrals -->
-    <color name="colorDivider">#E0E0E0</color>
-    <color name="colorTextPrimary">#212121</color>
-    <color name="colorTextSecondary">#757575</color>
-    <color name="colorTextHint">#BDBDBD</color>
+    <color name="colorDivider">#333333</color>
+    <color name="colorTextPrimary">#FFFFFF</color>
+    <color name="colorTextSecondary">#B0B0B0</color>
+    <color name="colorTextHint">#808080</color>
     
     <!-- Widget Specific -->
-    <color name="widget_background">#FFFFFF</color>
-    <color name="widget_title_bg">#1976D2</color>
+    <color name="widget_background">#000000</color>
+    <color name="widget_title_bg">#000000</color>
+    <color name="widget_accent_orange">#FFB74D</color>
 </resources>

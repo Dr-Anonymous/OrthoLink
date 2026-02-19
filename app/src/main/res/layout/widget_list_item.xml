@@ -27,7 +27,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="Pending: 0"
-            android:textColor="@color/colorError"
+            android:textColor="@color/widget_accent_orange"
             android:textStyle="bold"
             android:textSize="13sp" />
 
