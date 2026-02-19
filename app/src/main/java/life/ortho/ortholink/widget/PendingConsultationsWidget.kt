@@ -8,6 +8,8 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import android.widget.RemoteViews
+import android.app.AlarmManager
+import android.os.SystemClock
 import life.ortho.ortholink.MainActivity
 import life.ortho.ortholink.R
 
@@ -44,19 +46,56 @@ class PendingConsultationsWidget : AppWidgetProvider() {
                     appWidgetManager.updateAppWidget(appWidgetId, views)
                 }
 
+                // Schedule safety timeout to hide spinner if network hangs
+                scheduleSafetyTimeout(context)
+
                 // Trigger data refresh
                 // We use notifyAppWidgetViewDataChanged which triggers onDataSetChanged in the service
                 appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetIds, R.id.widget_list)
                 Log.d("Widget", "Refresh triggered")
             }
             ACTION_REFRESH_COMPLETE -> {
+                 // Cancel safety timeout since we are done
+                 cancelSafetyTimeout(context)
+
                  // Hide loader and restore clicks on all widgets
                 for (appWidgetId in appWidgetIds) {
+                    // We must fully restore the widget state (listeners, adapter)
                     updateAppWidget(context, appWidgetManager, appWidgetId)
                 }
                 Log.d("Widget", "Refresh complete")
             }
         }
+    }
+
+    private fun scheduleSafetyTimeout(context: Context) {
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager
+        val intent = Intent(context, PendingConsultationsWidget::class.java).apply {
+            action = ACTION_REFRESH_COMPLETE
+        }
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            0,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        // 15 seconds timeout
+        val triggerTime = SystemClock.elapsedRealtime() + 10000
+        alarmManager?.set(AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerTime, pendingIntent)
+    }
+
+    private fun cancelSafetyTimeout(context: Context) {
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager
+        val intent = Intent(context, PendingConsultationsWidget::class.java).apply {
+            action = ACTION_REFRESH_COMPLETE
+        }
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            0,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        alarmManager?.cancel(pendingIntent)
     }
 
     companion object {
