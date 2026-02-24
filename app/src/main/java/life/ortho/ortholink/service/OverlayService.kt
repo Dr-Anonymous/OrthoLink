@@ -214,6 +214,11 @@ class OverlayService : Service() {
         }
 
         // --- Known Caller Logic (Full Overlay) ---
+        // Ensure main content is visible
+        cardCallerInfo.visibility = View.VISIBLE
+        scrollViewDetails.visibility = View.VISIBLE
+        tvPatientInfo.visibility = View.GONE // Hide "Fetching..." text
+
         // Use name from API if available, otherwise construct it
         val displayName = patient.name ?: "${patient.firstName ?: ""} ${patient.lastName ?: ""}".trim()
         tvCallerName.text = if (displayName.isNotEmpty()) displayName else "Unknown Caller"
@@ -654,13 +659,9 @@ class OverlayService : Service() {
     }
 
     private fun fetchData(phone: String) {
-        // Format phone number: remove +91 or 91 prefix if present
-        val cleanPhone = phone.replace(Regex("[^0-9]"), "")
-        val queryPhone = if (cleanPhone.startsWith("91") && cleanPhone.length == 12) {
-            cleanPhone.substring(2)
-        } else {
-            cleanPhone
-        }
+        // Format phone number: remove non-numeric chars but keep the full number (including 91 if present)
+        // The backend now prioritizes full sanitized phone matching.
+        val queryPhone = phone.replace(Regex("[^0-9]"), "")
 
         var patientDetails: List<PatientDetails>? = null
         var calendarEvents: List<CalendarEvent>? = null
