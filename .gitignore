@@ -86,3 +86,4 @@ fastlane/readme.md
 .Trashes
 ehthumbs.db
 Thumbs.db
+.idea/markdown.xml

@@ -117,7 +117,7 @@ class OverlayService : Service() {
         }
     }
 
-    private fun showOverlay(phone: String, patient: PatientDetails?, calendarEvents: List<CalendarEvent>?) {
+    private fun showOverlay(phone: String, patients: List<PatientDetails>?, calendarEvents: List<CalendarEvent>?) {
         if (overlayView != null) return // Already showing
 
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
@@ -164,15 +164,16 @@ class OverlayService : Service() {
         val btnLaxmi = overlayView!!.findViewById<Button>(R.id.btnLaxmi)
         val btnBadam = overlayView!!.findViewById<Button>(R.id.btnBadam)
 
-        val layoutDetails = overlayView!!.findViewById<LinearLayout>(R.id.layoutDetails)
-        val cardDetails = overlayView!!.findViewById<androidx.cardview.widget.CardView>(R.id.cardDetails)
+        val hsvPatients = overlayView!!.findViewById<android.widget.HorizontalScrollView>(R.id.hsvPatients)
+        val layoutPatientsContainer = overlayView!!.findViewById<LinearLayout>(R.id.layoutPatientsContainer)
         val layoutCalendarEvents = overlayView!!.findViewById<LinearLayout>(R.id.layoutCalendarEvents)
         val cardCalendarEvents = overlayView!!.findViewById<androidx.cardview.widget.CardView>(R.id.cardCalendarEvents)
 
         tvCallerNumber.text = phone
         
         // Handle Unknown Caller (Patient not found) => Strip View
-        if (patient == null) {
+        val patient = patients?.firstOrNull()
+        if (patients.isNullOrEmpty() || patient == null) {
             // Adjust Window Layout Params for Strip
             // Use the layoutParams we just created above!
             layoutParams.width = WindowManager.LayoutParams.MATCH_PARENT
@@ -265,53 +266,68 @@ class OverlayService : Service() {
                 }
             }
             
-            // Bind Vitals
-            val vitalsList = mutableListOf<String>()
-            if (!patient.bp.isNullOrEmpty()) vitalsList.add("BP: ${patient.bp}")
-            if (!patient.weight.isNullOrEmpty()) vitalsList.add("Weight: ${patient.weight}")
-            if (!patient.temperature.isNullOrEmpty()) vitalsList.add("Temp: ${patient.temperature}")
+            // Display all matching patients in horizontally scrollable cards
+            layoutPatientsContainer.removeAllViews()
             
-            val vitalsText = if (vitalsList.isNotEmpty()) vitalsList.joinToString("  |  ") else null
-            bindDetail(overlayView!!.findViewById(R.id.layoutVitals), overlayView!!.findViewById(R.id.tvVitals), vitalsText)
+            for (p in patients) {
+                val cardView = LayoutInflater.from(contextThemeWrapper).inflate(R.layout.item_patient_card, layoutPatientsContainer, false)
+                
+                val tvCardPatientName = cardView.findViewById<TextView>(R.id.tvCardPatientName)
+                val cardDisplayName = p.name ?: "${p.firstName ?: ""} ${p.lastName ?: ""}".trim()
+                if (cardDisplayName.isNotEmpty()) {
+                    tvCardPatientName.text = cardDisplayName
+                    tvCardPatientName.visibility = View.VISIBLE
+                }
 
-            // Bind details
-            bindDetail(overlayView!!.findViewById(R.id.layoutReferredBy), overlayView!!.findViewById(R.id.tvReferredBy), patient.referredBy)
-            bindDetail(overlayView!!.findViewById(R.id.layoutPersonalNote), overlayView!!.findViewById(R.id.tvPersonalNote), patient.personalNote)
-            bindDetail(overlayView!!.findViewById(R.id.layoutComplaints), overlayView!!.findViewById(R.id.tvComplaints), patient.complaints)
-            bindDetail(overlayView!!.findViewById(R.id.layoutFindings), overlayView!!.findViewById(R.id.tvFindings), patient.findings)
-            bindDetail(overlayView!!.findViewById(R.id.layoutInvestigations), overlayView!!.findViewById(R.id.tvInvestigations), patient.investigations)
-            bindDetail(overlayView!!.findViewById(R.id.layoutDiagnosis), overlayView!!.findViewById(R.id.tvDiagnosis), patient.diagnosis)
-            bindDetail(overlayView!!.findViewById(R.id.layoutProcedure), overlayView!!.findViewById(R.id.tvProcedure), patient.procedure)
-            bindDetail(overlayView!!.findViewById(R.id.layoutAdvice), overlayView!!.findViewById(R.id.tvAdvice), patient.advice)
-            bindDetail(overlayView!!.findViewById(R.id.layoutFollowUp), overlayView!!.findViewById(R.id.tvFollowUp), patient.followup)
-            bindDetail(overlayView!!.findViewById(R.id.layoutReferredTo), overlayView!!.findViewById(R.id.tvReferredTo), patient.referredTo)
+                // Bind Vitals
+                val vitalsList = mutableListOf<String>()
+                if (!p.bp.isNullOrEmpty()) vitalsList.add("BP: ${p.bp}")
+                if (!p.weight.isNullOrEmpty()) vitalsList.add("Weight: ${p.weight}")
+                if (!p.temperature.isNullOrEmpty()) vitalsList.add("Temp: ${p.temperature}")
+                
+                val vitalsText = if (vitalsList.isNotEmpty()) vitalsList.joinToString("  |  ") else null
+                bindDetail(cardView.findViewById(R.id.layoutVitals), cardView.findViewById(R.id.tvVitals), vitalsText)
 
-            // Parse medications - NAMES ONLY
-            var medsText: String? = null
-            if (patient.medications != null) {
-                if (patient.medications.isJsonArray) {
-                    val medsArray = patient.medications.asJsonArray
-                    val medsList = mutableListOf<String>()
-                    medsArray.forEach { 
-                        if (it.isJsonObject) {
-                            val obj = it.asJsonObject
-                            val name = if (obj.has("name")) obj.get("name").asString else ""
-                            if (name.isNotEmpty()) {
-                                medsList.add(name)
+                // Bind details
+                bindDetail(cardView.findViewById(R.id.layoutReferredBy), cardView.findViewById(R.id.tvReferredBy), p.referredBy)
+                bindDetail(cardView.findViewById(R.id.layoutPersonalNote), cardView.findViewById(R.id.tvPersonalNote), p.personalNote)
+                bindDetail(cardView.findViewById(R.id.layoutComplaints), cardView.findViewById(R.id.tvComplaints), p.complaints)
+                bindDetail(cardView.findViewById(R.id.layoutFindings), cardView.findViewById(R.id.tvFindings), p.findings)
+                bindDetail(cardView.findViewById(R.id.layoutInvestigations), cardView.findViewById(R.id.tvInvestigations), p.investigations)
+                bindDetail(cardView.findViewById(R.id.layoutDiagnosis), cardView.findViewById(R.id.tvDiagnosis), p.diagnosis)
+                bindDetail(cardView.findViewById(R.id.layoutProcedure), cardView.findViewById(R.id.tvProcedure), p.procedure)
+                bindDetail(cardView.findViewById(R.id.layoutAdvice), cardView.findViewById(R.id.tvAdvice), p.advice)
+                bindDetail(cardView.findViewById(R.id.layoutFollowUp), cardView.findViewById(R.id.tvFollowUp), p.followup)
+                bindDetail(cardView.findViewById(R.id.layoutReferredTo), cardView.findViewById(R.id.tvReferredTo), p.referredTo)
+
+                // Parse medications - NAMES ONLY
+                var medsText: String? = null
+                if (p.medications != null) {
+                    if (p.medications.isJsonArray) {
+                        val medsArray = p.medications.asJsonArray
+                        val medsList = mutableListOf<String>()
+                        medsArray.forEach { 
+                            if (it.isJsonObject) {
+                                val obj = it.asJsonObject
+                                val name = if (obj.has("name")) obj.get("name").asString else ""
+                                if (name.isNotEmpty()) {
+                                    medsList.add(name)
+                                }
                             }
                         }
+                        if (medsList.isNotEmpty()) {
+                            medsText = medsList.joinToString(", ")
+                        }
+                    } else if (p.medications.isJsonPrimitive) {
+                        medsText = p.medications.asString
                     }
-                    if (medsList.isNotEmpty()) {
-                        medsText = medsList.joinToString(", ")
-                    }
-                } else if (patient.medications.isJsonPrimitive) {
-                    medsText = patient.medications.asString
                 }
+                bindDetail(cardView.findViewById(R.id.layoutMedications), cardView.findViewById(R.id.tvMedications), medsText)
+                
+                layoutPatientsContainer.addView(cardView)
             }
-            bindDetail(overlayView!!.findViewById(R.id.layoutMedications), overlayView!!.findViewById(R.id.tvMedications), medsText)
 
-            layoutDetails.visibility = View.VISIBLE
-            cardDetails.visibility = View.VISIBLE
+            hsvPatients.visibility = View.VISIBLE
         
         // Bind Calendar Events
         if (!calendarEvents.isNullOrEmpty()) {
@@ -645,7 +661,7 @@ class OverlayService : Service() {
             cleanPhone
         }
 
-        var patientDetails: PatientDetails? = null
+        var patientDetails: List<PatientDetails>? = null
         var calendarEvents: List<CalendarEvent>? = null
         var patientReqDone = false
         var calendarReqDone = false
@@ -663,7 +679,7 @@ class OverlayService : Service() {
         ).enqueue(object : Callback<List<PatientDetails>> {
             override fun onResponse(call: Call<List<PatientDetails>>, response: Response<List<PatientDetails>>) {
                 if (response.isSuccessful && !response.body().isNullOrEmpty()) {
-                    patientDetails = response.body()!![0]
+                    patientDetails = response.body()!!.sortedByDescending { it.createdAt ?: "" }
                 }
                 patientReqDone = true
                 checkAndShow()
