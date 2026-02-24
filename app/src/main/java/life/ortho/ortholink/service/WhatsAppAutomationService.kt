@@ -1,9 +1,17 @@
 package life.ortho.ortholink.service
 
+import android.Manifest
 import android.accessibilityservice.AccessibilityService
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import android.widget.Toast
+import androidx.core.content.ContextCompat
 
 class WhatsAppAutomationService : AccessibilityService() {
 
@@ -14,6 +22,8 @@ class WhatsAppAutomationService : AccessibilityService() {
         private const val SEND_BUTTON_ID = "com.whatsapp:id/send" // This ID might change!
         private const val SEND_BUTTON_DESC = "Send"
     }
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private var actionSequenceScheduled = false
 
     override fun onServiceConnected() {
         super.onServiceConnected()
@@ -26,7 +36,7 @@ class WhatsAppAutomationService : AccessibilityService() {
         }
 
         // CRITICAL FIX: Only proceed if we initiated the action
-        if (!AutomationState.shouldSend) {
+        if (!AutomationState.shouldSend || actionSequenceScheduled) {
             return
         }
 
@@ -38,6 +48,7 @@ class WhatsAppAutomationService : AccessibilityService() {
             // Check for "Not on WhatsApp" dialog
             val errorNode = findNodeByText(rootNode, "on WhatsApp")
             if (errorNode != null) {
+                actionSequenceScheduled = true
                 handleErrorAndFallback(rootNode, "Not on WhatsApp")
                 return
             }
@@ -55,20 +66,19 @@ class WhatsAppAutomationService : AccessibilityService() {
                     val okButton = findNodeByText(rootNode, "OK")
                     okButton?.performAction(AccessibilityNodeInfo.ACTION_CLICK)
                     
-                    // Back out to exit
-                    performGlobalAction(GLOBAL_ACTION_BACK)
-                    try { Thread.sleep(500) } catch (e: Exception) {}
-                    performGlobalAction(GLOBAL_ACTION_BACK)
-                    
-                    // Trigger Retry Broadcast
-                    val intent = android.content.Intent("life.ortho.ortholink.ACTION_RETRY")
-                    intent.setPackage(packageName)
-                    sendBroadcast(intent)
-                    
-                    AutomationState.shouldSend = false
+                    actionSequenceScheduled = true
+                    scheduleBackTwice {
+                        val intent = Intent("life.ortho.ortholink.ACTION_RETRY")
+                        intent.setPackage(packageName)
+                        sendBroadcast(intent)
+
+                        AutomationState.shouldSend = false
+                        actionSequenceScheduled = false
+                    }
                     return
                 } else {
                     Log.d(TAG, "Retry limit reached. Falling back to SMS.")
+                    actionSequenceScheduled = true
                     handleErrorAndFallback(rootNode, "Couldn't connect")
                     return
                 }
@@ -83,20 +93,15 @@ class WhatsAppAutomationService : AccessibilityService() {
                     Log.d(TAG, "Retrying... (Count: ${AutomationState.retryCount})")
                     AutomationState.retryCount++
                     
-                    // Back out to exit
-                    performGlobalAction(GLOBAL_ACTION_BACK)
-                    try { Thread.sleep(500) } catch (e: Exception) {}
-                    performGlobalAction(GLOBAL_ACTION_BACK)
-                    
-                    // Trigger Retry Broadcast (Optional, can be implemented if needed)
-                    // val intent = android.content.Intent("life.ortho.ortholink.ACTION_RETRY")
-                    // intent.setPackage(packageName)
-                    // sendBroadcast(intent)
-                    
-                    AutomationState.shouldSend = false
+                    actionSequenceScheduled = true
+                    scheduleBackTwice {
+                        AutomationState.shouldSend = false
+                        actionSequenceScheduled = false
+                    }
                     return
                 } else {
                     Log.d(TAG, "Retry limit reached. Falling back to SMS.")
+                    actionSequenceScheduled = true
                     handleErrorAndFallback(rootNode, "No Internet")
                     return
                 }
@@ -106,47 +111,14 @@ class WhatsAppAutomationService : AccessibilityService() {
             val sendButton = findSendButton(rootNode)
             if (sendButton != null) {
                 Log.d(TAG, "Send button found...")
-                
-                // Wait a brief moment to ensure UI is ready
-                try {
-                    var delay = 500L
-                    if (AutomationState.hasLink) {
-                        Log.d(TAG, "Link detected, waiting 2.5s for preview...")
-                        delay = 2500L // 2.5 seconds for link preview
-                    }
-                    Thread.sleep(delay) 
-                } catch (e: InterruptedException) {
-                    e.printStackTrace()
-                }
-
-                Log.d(TAG, "Clicking send button now")
-                val clicked = sendButton.performAction(AccessibilityNodeInfo.ACTION_CLICK)
-                if (clicked) {
-                    Log.d(TAG, "Send button clicked successfully")
-                    
-                    // Reset the flag immediately to prevent double clicks or accidental clicks
-                    AutomationState.shouldSend = false
-                    
-                    // Wait for message to send, then go back
-                    try {
-                        Thread.sleep(1000)
-                    } catch (e: InterruptedException) {
-                        e.printStackTrace()
-                    }
-                    performGlobalAction(GLOBAL_ACTION_BACK)
-                    Log.d(TAG, "Performed first BACK action")
-
-                    // Wait for chat to close, then go back again to exit app
-                    try {
-                        Thread.sleep(500)
-                    } catch (e: InterruptedException) {
-                        e.printStackTrace()
-                    }
-                    performGlobalAction(GLOBAL_ACTION_BACK)
-                    Log.d(TAG, "Performed second BACK action")
+                actionSequenceScheduled = true
+                val delay = if (AutomationState.hasLink) {
+                    Log.d(TAG, "Link detected, waiting 2.5s for preview...")
+                    2500L
                 } else {
-                    Log.e(TAG, "Failed to click send button")
+                    500L
                 }
+                scheduleSendSequence(delay)
             }
         }
     }
@@ -166,36 +138,95 @@ class WhatsAppAutomationService : AccessibilityService() {
         val okButton = findNodeByText(rootNode, "OK")
         okButton?.performAction(AccessibilityNodeInfo.ACTION_CLICK)
         
-        // Go back to exit
-        performGlobalAction(GLOBAL_ACTION_BACK)
-        try { Thread.sleep(500) } catch (e: Exception) {}
-        performGlobalAction(GLOBAL_ACTION_BACK)
-        
-        // Send SMS Fallback
-        val phone = AutomationState.currentPhoneNumber
-        val msg = AutomationState.currentMessage
-        if (phone != null && msg != null) {
-            sendSMS(phone, msg)
-        } else {
-            Log.e(TAG, "Cannot send SMS: Phone or Message is null")
+        scheduleBackTwice {
+            val phone = AutomationState.currentPhoneNumber
+            val msg = AutomationState.currentMessage
+            if (phone != null && msg != null) {
+                sendSMS(phone, msg)
+            } else {
+                Log.e(TAG, "Cannot send SMS: Phone or Message is null")
+            }
+
+            AutomationState.shouldSend = false
+            AutomationState.retryCount = 0
+            actionSequenceScheduled = false
         }
-        
-        // Reset state
-        AutomationState.shouldSend = false
-        AutomationState.retryCount = 0 // Reset retry count after fallback
     }
     
     private fun sendSMS(phoneNumber: String, message: String) {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED) {
+            Log.w(TAG, "SEND_SMS permission not granted. Opening SMS composer.")
+            openSmsComposer(phoneNumber, message)
+            return
+        }
+
         try {
             Log.d(TAG, "Attempting to send SMS to $phoneNumber")
             val smsManager = android.telephony.SmsManager.getDefault()
             smsManager.sendTextMessage(phoneNumber, null, message, null, null)
             Log.d(TAG, "SMS sent successfully")
-            android.widget.Toast.makeText(this, "Sent via SMS", android.widget.Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Sent via SMS", Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
             Log.e(TAG, "Failed to send SMS: ${e.message}")
             e.printStackTrace()
+            openSmsComposer(phoneNumber, message)
         }
+    }
+
+    private fun openSmsComposer(phoneNumber: String, message: String) {
+        try {
+            val intent = Intent(Intent.ACTION_SENDTO).apply {
+                data = Uri.parse("smsto:$phoneNumber")
+                putExtra("sms_body", message)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            startActivity(intent)
+            Toast.makeText(this, "Opened SMS app to send message", Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to open SMS composer", e)
+        }
+    }
+
+    private fun scheduleBackTwice(onComplete: (() -> Unit)? = null) {
+        performGlobalAction(GLOBAL_ACTION_BACK)
+        mainHandler.postDelayed({
+            performGlobalAction(GLOBAL_ACTION_BACK)
+            onComplete?.invoke()
+        }, 500L)
+    }
+
+    private fun scheduleSendSequence(initialDelayMs: Long) {
+        mainHandler.postDelayed({
+            val rootNode = rootInActiveWindow
+            val sendButton = rootNode?.let { findSendButton(it) }
+            if (sendButton == null) {
+                Log.e(TAG, "Send button unavailable when send sequence executed")
+                actionSequenceScheduled = false
+                return@postDelayed
+            }
+
+            Log.d(TAG, "Clicking send button now")
+            val clicked = sendButton.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+            if (!clicked) {
+                Log.e(TAG, "Failed to click send button")
+                actionSequenceScheduled = false
+                return@postDelayed
+            }
+
+            Log.d(TAG, "Send button clicked successfully")
+            AutomationState.shouldSend = false
+
+            mainHandler.postDelayed({
+                performGlobalAction(GLOBAL_ACTION_BACK)
+                Log.d(TAG, "Performed first BACK action")
+            }, 1000L)
+
+            mainHandler.postDelayed({
+                performGlobalAction(GLOBAL_ACTION_BACK)
+                Log.d(TAG, "Performed second BACK action")
+                actionSequenceScheduled = false
+            }, 1500L)
+        }, initialDelayMs)
     }
 
     private fun findSendButton(rootNode: AccessibilityNodeInfo): AccessibilityNodeInfo? {
@@ -220,5 +251,11 @@ class WhatsAppAutomationService : AccessibilityService() {
 
     override fun onInterrupt() {
         Log.d(TAG, "Service Interrupted")
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        mainHandler.removeCallbacksAndMessages(null)
+        actionSequenceScheduled = false
     }
 }

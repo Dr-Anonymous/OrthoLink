@@ -16,6 +16,7 @@ import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.content.ContextCompat
 import life.ortho.ortholink.R
 import life.ortho.ortholink.model.CalendarEvent
 import life.ortho.ortholink.model.CalendarEventResponse
@@ -771,11 +772,12 @@ class OverlayService : Service() {
         
         // Register retry receiver
         val filter = android.content.IntentFilter("life.ortho.ortholink.ACTION_RETRY")
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(retryReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
-        } else {
-            registerReceiver(retryReceiver, filter)
-        }
+        ContextCompat.registerReceiver(
+            this,
+            retryReceiver,
+            filter,
+            ContextCompat.RECEIVER_NOT_EXPORTED
+        )
     }
 
     override fun onDestroy() {

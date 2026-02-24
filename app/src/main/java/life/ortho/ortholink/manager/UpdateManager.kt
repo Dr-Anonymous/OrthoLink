@@ -8,8 +8,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.net.Uri
-import android.os.Build
 import android.widget.Toast
+import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
@@ -30,7 +30,7 @@ object UpdateManager {
     data class GitHubRelease(
         @SerializedName("tag_name") val tagName: String,
         @SerializedName("assets") val assets: List<GitHubAsset>,
-        @SerializedName("body") val body: String
+        @SerializedName("body") val body: String?
     )
 
     data class GitHubAsset(
@@ -132,11 +132,12 @@ object UpdateManager {
             }
         }
         
-        if (Build.VERSION.SDK_INT >= 33) { // TIRAMISU
-             context.registerReceiver(onComplete, IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE), Context.RECEIVER_EXPORTED)
-        } else {
-             context.registerReceiver(onComplete, IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE))
-        }
+        ContextCompat.registerReceiver(
+            context,
+            onComplete,
+            IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
+            ContextCompat.RECEIVER_EXPORTED
+        )
         
         Toast.makeText(context, "Update downloading in background...", Toast.LENGTH_SHORT).show()
     }

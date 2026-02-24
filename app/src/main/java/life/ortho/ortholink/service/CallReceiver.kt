@@ -16,7 +16,7 @@ class CallReceiver : BroadcastReceiver() {
                 val incomingNumber = intent.getStringExtra(TelephonyManager.EXTRA_INCOMING_NUMBER)
                 
                 if (incomingNumber != null) {
-                    startOverlayService(context, incomingNumber, false)
+                    startOverlayService(context, incomingNumber)
                 }
             } else if (state == TelephonyManager.EXTRA_STATE_IDLE) {
                 val serviceIntent = Intent(context, OverlayService::class.java)
@@ -27,19 +27,14 @@ class CallReceiver : BroadcastReceiver() {
                     context.startService(serviceIntent)
                 }
             }
-        } else if (intent.action == Intent.ACTION_NEW_OUTGOING_CALL) {
-            val outgoingNumber = intent.getStringExtra(Intent.EXTRA_PHONE_NUMBER)
-            if (outgoingNumber != null) {
-                startOverlayService(context, outgoingNumber, true)
-            }
         }
     }
 
-    private fun startOverlayService(context: Context, number: String, isOutgoing: Boolean) {
+    private fun startOverlayService(context: Context, number: String) {
         if (Settings.canDrawOverlays(context)) {
             val serviceIntent = Intent(context, OverlayService::class.java)
             serviceIntent.putExtra("PHONE_NUMBER", number)
-            serviceIntent.putExtra("IS_OUTGOING", isOutgoing)
+            serviceIntent.putExtra("IS_OUTGOING", false)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.startForegroundService(serviceIntent)
             } else {

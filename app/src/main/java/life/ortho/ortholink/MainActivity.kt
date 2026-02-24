@@ -18,7 +18,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import android.content.Context
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import kotlin.system.exitProcess
 
 class MainActivity : AppCompatActivity() {
 
@@ -175,10 +174,12 @@ class MainActivity : AppCompatActivity() {
         val permissions = mutableListOf(
             Manifest.permission.READ_CALL_LOG,
             Manifest.permission.READ_PHONE_STATE,
-            Manifest.permission.PROCESS_OUTGOING_CALLS,
-            Manifest.permission.ANSWER_PHONE_CALLS,
-            Manifest.permission.READ_CONTACTS
+            Manifest.permission.READ_CONTACTS,
+            Manifest.permission.SEND_SMS
         )
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            permissions.add(Manifest.permission.ANSWER_PHONE_CALLS)
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             permissions.add(Manifest.permission.POST_NOTIFICATIONS)
         }
@@ -288,8 +289,7 @@ class MainActivity : AppCompatActivity() {
         if (webView.canGoBack()) {
             webView.goBack()
         } else {
-            finishAffinity()
-            exitProcess(0)
+            super.onBackPressed()
         }
     }
 }
