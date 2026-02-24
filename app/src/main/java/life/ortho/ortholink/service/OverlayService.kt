@@ -150,6 +150,7 @@ class OverlayService : Service() {
         
         val tvCallerNumber = overlayView!!.findViewById<TextView>(R.id.tvCallerNumber)
         val tvCallerName = overlayView!!.findViewById<TextView>(R.id.tvCallerName)
+        val tvPatientInfo = overlayView!!.findViewById<TextView>(R.id.tvPatientInfo)
         val layoutLocation = overlayView!!.findViewById<LinearLayout>(R.id.layoutLocation)
         val tvLocation = overlayView!!.findViewById<TextView>(R.id.tvLocation)
         val tvDate = overlayView!!.findViewById<TextView>(R.id.tvDate)
