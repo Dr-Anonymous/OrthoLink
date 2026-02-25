@@ -335,7 +335,7 @@ class OverlayService : Service() {
             }
 
             hsvPatients.visibility = View.VISIBLE
-        
+            
         // Bind Calendar Events
         if (!calendarEvents.isNullOrEmpty()) {
             val event = calendarEvents[0] // Show first event for now
@@ -498,7 +498,11 @@ class OverlayService : Service() {
 
 
         try {
-            windowManager?.addView(overlayView, layoutParams)
+            if (overlayView!!.parent == null) {
+                windowManager?.addView(overlayView, layoutParams)
+            } else {
+                windowManager?.updateViewLayout(overlayView, layoutParams)
+            }
         } catch (e: Exception) {
             e.printStackTrace()
             stopSelf()
