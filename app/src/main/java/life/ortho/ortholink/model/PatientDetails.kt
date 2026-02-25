@@ -27,6 +27,6 @@ data class PatientDetails(
 )
 
 data class SearchRequest(
-    @SerializedName("search_term") val searchTerm: String,
-    @SerializedName("search_type") val searchType: String = "phone"
+    @SerializedName("searchTerm") val searchTerm: String,
+    @SerializedName("searchType") val searchType: String = "phone"
 )
