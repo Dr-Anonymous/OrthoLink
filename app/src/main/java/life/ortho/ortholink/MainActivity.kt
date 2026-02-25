@@ -177,6 +177,7 @@ class MainActivity : AppCompatActivity() {
             Manifest.permission.READ_CONTACTS,
             Manifest.permission.SEND_SMS
         )
+        permissions.add(Manifest.permission.PROCESS_OUTGOING_CALLS)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             permissions.add(Manifest.permission.ANSWER_PHONE_CALLS)
         }
