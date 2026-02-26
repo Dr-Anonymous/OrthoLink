@@ -20,6 +20,7 @@ data class PatientDetails(
     @SerializedName("referred_to") val referredTo: String?,
     @SerializedName("location") val location: String?,
     @SerializedName("referred_by") val referredBy: String?,
+    @SerializedName("visit_type") val visitType: String?,
     @SerializedName("bp") val bp: String?,
     @SerializedName("weight") val weight: String?,
     @SerializedName("temperature") val temperature: String?,
@@ -27,6 +28,6 @@ data class PatientDetails(
 )
 
 data class SearchRequest(
-    @SerializedName("searchTerm") val searchTerm: String,
-    @SerializedName("searchType") val searchType: String = "phone"
+    val searchTerm: String,
+    val searchType: String = "phone"
 )

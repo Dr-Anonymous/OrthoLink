@@ -297,6 +297,7 @@ class OverlayService : Service() {
 
                 // Bind details
                 bindDetail(cardView.findViewById(R.id.layoutReferredBy), cardView.findViewById(R.id.tvReferredBy), p.referredBy)
+                bindDetail(cardView.findViewById(R.id.layoutVisitType), cardView.findViewById(R.id.tvVisitType), p.visitType)
                 bindDetail(cardView.findViewById(R.id.layoutPersonalNote), cardView.findViewById(R.id.tvPersonalNote), p.personalNote)
                 bindDetail(cardView.findViewById(R.id.layoutComplaints), cardView.findViewById(R.id.tvComplaints), p.complaints)
                 bindDetail(cardView.findViewById(R.id.layoutFindings), cardView.findViewById(R.id.tvFindings), p.findings)
@@ -664,9 +665,13 @@ class OverlayService : Service() {
     }
 
     private fun fetchData(phone: String) {
-        // Format phone number: remove non-numeric chars but keep the full number (including 91 if present)
-        // The backend now prioritizes full sanitized phone matching.
-        val queryPhone = phone.replace(Regex("[^0-9]"), "")
+        // Format phone number: remove +91 or 91 prefix if present
+        val cleanPhone = phone.replace(Regex("[^0-9]"), "")
+        val queryPhone = if (cleanPhone.startsWith("91") && cleanPhone.length == 12) {
+            cleanPhone.substring(2)
+        } else {
+            cleanPhone
+        }
 
         var patientDetails: List<PatientDetails>? = null
         var calendarEvents: List<CalendarEvent>? = null
