@@ -1,12 +1,18 @@
 package life.ortho.ortholink.service
 
 import android.app.Service
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
+import android.content.pm.ServiceInfo
 import android.graphics.PixelFormat
 import android.net.Uri
 import android.os.Build
 import android.os.IBinder
+import android.telephony.TelephonyManager
+import android.telephony.TelephonyCallback
+import androidx.annotation.RequiresApi
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
@@ -33,6 +39,9 @@ class OverlayService : Service() {
     private var overlayView: View? = null
     private var phoneNumber: String? = null
     private var isOutgoing: Boolean = false
+    
+    // Support for newer Android versions (API 31+)
+    private var telephonyCallback: Any? = null
 
     override fun onBind(intent: Intent?): IBinder? {
         return null
@@ -51,7 +60,11 @@ class OverlayService : Service() {
 
         // MUST call startForeground immediately, otherwise the app will crash
         // if started with startForegroundService()
-        startForeground(1, notification)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) { // API 34
+            startForeground(1, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_PHONE_CALL)
+        } else {
+            startForeground(1, notification)
+        }
 
         if (intent?.action == "STOP") {
             stopForeground(true)
@@ -121,7 +134,6 @@ class OverlayService : Service() {
         val scrollViewDetails = overlayView!!.findViewById<android.widget.ScrollView>(R.id.scrollViewDetails)
         
         val tvCallerNumber = overlayView!!.findViewById<TextView>(R.id.tvCallerNumber)
-        val tvCallerName = overlayView!!.findViewById<TextView>(R.id.tvCallerName)
         val tvPatientInfo = overlayView!!.findViewById<TextView>(R.id.tvPatientInfo)
         
         val layoutActions = overlayView!!.findViewById<LinearLayout>(R.id.layoutActions)
@@ -188,10 +200,6 @@ class OverlayService : Service() {
         cardCallerInfo.visibility = View.VISIBLE
         scrollViewDetails.visibility = View.VISIBLE
         tvPatientInfo.visibility = View.GONE // Hide "Fetching..." text
-
-        // Use name from API if available, otherwise construct it
-        val displayName = patient.name ?: "${patient.firstName ?: ""} ${patient.lastName ?: ""}".trim()
-        tvCallerName.text = if (displayName.isNotEmpty()) displayName else "Unknown Caller"
 
         // Display all matching patients in horizontally scrollable cards
         layoutPatientsContainer.removeAllViews()
@@ -349,10 +357,8 @@ class OverlayService : Service() {
                     }
                     
                     if (key.equals("Patient", ignoreCase = true)) {
-                        // If we don't have a patient name from the DB, use this one
-                        if (tvCallerName.text == "Unknown Caller") {
-                            tvCallerName.text = value
-                        }
+                        // We no longer show the name in the header, 
+                        // but we could use this value if we needed to populate a generic header
                         continue // Skip displaying Patient field in description
                     }
 
@@ -596,6 +602,17 @@ class OverlayService : Service() {
         android.util.Log.d("OverlayService", "Service stop requested")
     }
 
+    private fun handleCallStateIdle() {
+        android.util.Log.d("OverlayService", "handleCallStateIdle() called")
+        // Stop service and remove overlay
+        // We use a small delay but call stopSelf which triggers onDestroy
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+            android.util.Log.d("OverlayService", "Executing stopSelf() after IDLE")
+            stopForeground(true)
+            stopSelf()
+        }, 500)
+    }
+
     private fun setupLocationButtons(view: View, phone: String) {
         val btnClinic = view.findViewById<Button>(R.id.btnClinic)
         val btnLaxmi = view.findViewById<Button>(R.id.btnLaxmi)
@@ -714,29 +731,45 @@ class OverlayService : Service() {
         }
     }
 
-    private val retryReceiver = object : android.content.BroadcastReceiver() {
+    private val serviceReceiver = object : android.content.BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            if (intent?.action == "life.ortho.ortholink.ACTION_RETRY") {
-                val phone = AutomationState.currentPhoneNumber
-                val message = AutomationState.currentMessage
-                if (phone != null) {
-                    android.util.Log.d("OverlayService", "Retrying WhatsApp automation...")
-                    // Reset shouldSend to true, but keep retryCount (it's managed by AutomationService)
-                    AutomationState.shouldSend = true
-                    
-                    // Re-launch WhatsApp
-                    try {
-                        val url = if (message != null) {
-                            "https://api.whatsapp.com/send?phone=$phone&text=${java.net.URLEncoder.encode(message, "UTF-8")}"
-                        } else {
-                            "https://api.whatsapp.com/send?phone=$phone"
+            android.util.Log.d("OverlayService", "Broadcast received: ${intent?.action}")
+            when (intent?.action) {
+                "life.ortho.ortholink.ACTION_RETRY" -> {
+                    val phone = AutomationState.currentPhoneNumber
+                    val message = AutomationState.currentMessage
+                    if (phone != null) {
+                        android.util.Log.d("OverlayService", "Retrying WhatsApp automation...")
+                        AutomationState.shouldSend = true
+                        try {
+                            val url = if (message != null) {
+                                "https://api.whatsapp.com/send?phone=$phone&text=${java.net.URLEncoder.encode(message, "UTF-8")}"
+                            } else {
+                                "https://api.whatsapp.com/send?phone=$phone"
+                            }
+                            val i = Intent(Intent.ACTION_VIEW)
+                            i.data = Uri.parse(url)
+                            i.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                            startActivity(i)
+                        } catch (e: Exception) {
+                            e.printStackTrace()
                         }
-                        val i = Intent(Intent.ACTION_VIEW)
-                        i.data = Uri.parse(url)
-                        i.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                        startActivity(i)
-                    } catch (e: Exception) {
-                        e.printStackTrace()
+                    }
+                }
+                TelephonyManager.ACTION_PHONE_STATE_CHANGED -> {
+                    val state = intent.getStringExtra(TelephonyManager.EXTRA_STATE)
+                    android.util.Log.d("OverlayService", "Broadcast Call state: $state")
+                    if (state == TelephonyManager.EXTRA_STATE_IDLE) {
+                        handleCallStateIdle()
+                    }
+                }
+                Intent.ACTION_SCREEN_OFF -> {
+                    android.util.Log.d("OverlayService", "Screen OFF detected")
+                    // If screen goes off, double check if call is idle
+                    val tm = getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+                    if (tm.callState == TelephonyManager.CALL_STATE_IDLE) {
+                        android.util.Log.d("OverlayService", "Call is IDLE on Screen OFF, closing")
+                        handleCallStateIdle()
                     }
                 }
             }
@@ -745,14 +778,19 @@ class OverlayService : Service() {
 
     private val phoneStateListener = object : android.telephony.PhoneStateListener() {
         override fun onCallStateChanged(state: Int, phoneNumber: String?) {
-            android.util.Log.d("OverlayService", "Call state changed: $state (IDLE=${android.telephony.TelephonyManager.CALL_STATE_IDLE})")
+            android.util.Log.d("OverlayService", "Call state changed (deprecated listener): $state")
             if (state == android.telephony.TelephonyManager.CALL_STATE_IDLE) {
-                android.util.Log.d("OverlayService", "Call ended, stopping service")
-                // Add a small delay to ensure call is fully ended
-                android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-                    stopForeground(true)
-                    stopSelf()
-                }, 500)
+                handleCallStateIdle()
+            }
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.S)
+    private inner class CallStateCallback : TelephonyCallback(), TelephonyCallback.CallStateListener {
+        override fun onCallStateChanged(state: Int) {
+            android.util.Log.d("OverlayService", "Call state changed (TelephonyCallback): $state")
+            if (state == TelephonyManager.CALL_STATE_IDLE) {
+                handleCallStateIdle()
             }
         }
     }
@@ -761,13 +799,27 @@ class OverlayService : Service() {
         super.onCreate()
         createNotificationChannel()
         val telephonyManager = getSystemService(Context.TELEPHONY_SERVICE) as android.telephony.TelephonyManager
-        telephonyManager.listen(phoneStateListener, android.telephony.PhoneStateListener.LISTEN_CALL_STATE)
         
-        // Register retry receiver
-        val filter = android.content.IntentFilter("life.ortho.ortholink.ACTION_RETRY")
+        // Register listeners for call state
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val callback = CallStateCallback()
+            telephonyCallback = callback
+            telephonyManager.registerTelephonyCallback(mainExecutor, callback)
+        } else {
+            @Suppress("DEPRECATION")
+            telephonyManager.listen(phoneStateListener, android.telephony.PhoneStateListener.LISTEN_CALL_STATE)
+        }
+        
+        // Register receiver for both retry and system events
+        val filter = android.content.IntentFilter().apply {
+            addAction("life.ortho.ortholink.ACTION_RETRY")
+            addAction(TelephonyManager.ACTION_PHONE_STATE_CHANGED)
+            addAction(Intent.ACTION_SCREEN_OFF)
+        }
+        
         ContextCompat.registerReceiver(
             this,
-            retryReceiver,
+            serviceReceiver,
             filter,
             ContextCompat.RECEIVER_NOT_EXPORTED
         )
@@ -777,18 +829,23 @@ class OverlayService : Service() {
         android.util.Log.d("OverlayService", "onDestroy() called")
         super.onDestroy()
         
-        // Unregister retry receiver
+        // Unregister service receiver
         try {
-            unregisterReceiver(retryReceiver)
+            unregisterReceiver(serviceReceiver)
         } catch (e: Exception) {
             e.printStackTrace()
         }
         
-        // Unregister phone state listener
+        // Unregister phone state listener/callback
         try {
             val telephonyManager = getSystemService(Context.TELEPHONY_SERVICE) as android.telephony.TelephonyManager
-            telephonyManager.listen(phoneStateListener, android.telephony.PhoneStateListener.LISTEN_NONE)
-            android.util.Log.d("OverlayService", "PhoneStateListener unregistered")
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && telephonyCallback != null) {
+                telephonyManager.unregisterTelephonyCallback(telephonyCallback as TelephonyCallback)
+            } else {
+                @Suppress("DEPRECATION")
+                telephonyManager.listen(phoneStateListener, android.telephony.PhoneStateListener.LISTEN_NONE)
+            }
+            android.util.Log.d("OverlayService", "Phone state listeners unregistered")
         } catch (e: Exception) {
             android.util.Log.e("OverlayService", "Error unregistering listener", e)
         }
