@@ -71,40 +71,12 @@ class OverlayService : Service() {
         isOutgoing = intent?.getBooleanExtra("IS_OUTGOING", false) ?: false
         
         if (phoneNumber != null) {
-            // Check if number is in contacts
-            if (contactExists(this, phoneNumber!!)) {
-                // It's a saved contact, do not show overlay
-                stopForeground(true)
-                stopSelf()
-                return START_NOT_STICKY
-            }
-
             // Fetch data FIRST, then show overlay
             fetchData(phoneNumber!!)
         }
         return START_NOT_STICKY
     }
 
-    private fun contactExists(context: Context, number: String): Boolean {
-        if (androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.READ_CONTACTS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
-            return false // Permission not granted, assume unknown
-        }
-        
-        val lookupUri = android.net.Uri.withAppendedPath(android.provider.ContactsContract.PhoneLookup.CONTENT_FILTER_URI, android.net.Uri.encode(number))
-        val projection = arrayOf(android.provider.ContactsContract.PhoneLookup._ID)
-        var cur: android.database.Cursor? = null
-        try {
-            cur = context.contentResolver.query(lookupUri, projection, null, null, null)
-            if (cur != null && cur.moveToFirst()) {
-                return true // Contact found
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        } finally {
-            cur?.close()
-        }
-        return false
-    }
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -151,9 +123,6 @@ class OverlayService : Service() {
         val tvCallerNumber = overlayView!!.findViewById<TextView>(R.id.tvCallerNumber)
         val tvCallerName = overlayView!!.findViewById<TextView>(R.id.tvCallerName)
         val tvPatientInfo = overlayView!!.findViewById<TextView>(R.id.tvPatientInfo)
-        val layoutLocation = overlayView!!.findViewById<LinearLayout>(R.id.layoutLocation)
-        val tvLocation = overlayView!!.findViewById<TextView>(R.id.tvLocation)
-        val tvDate = overlayView!!.findViewById<TextView>(R.id.tvDate)
         
         val layoutActions = overlayView!!.findViewById<LinearLayout>(R.id.layoutActions)
         val layoutCallControls = overlayView!!.findViewById<LinearLayout>(R.id.layoutCallControls)
@@ -223,58 +192,9 @@ class OverlayService : Service() {
         // Use name from API if available, otherwise construct it
         val displayName = patient.name ?: "${patient.firstName ?: ""} ${patient.lastName ?: ""}".trim()
         tvCallerName.text = if (displayName.isNotEmpty()) displayName else "Unknown Caller"
-        
-        // Location
-        if (!patient.location.isNullOrEmpty()) {
-            tvLocation.text = patient.location
-            layoutLocation.visibility = View.VISIBLE
-        }
 
-        // Date
-        if (!patient.createdAt.isNullOrEmpty()) {
-            try {
-                val sdf = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.getDefault())
-                // Handle timezone if needed, usually ISO is UTC but we might need lenient parsing
-                // or just parse the first part if it has milliseconds/timezone
-                sdf.timeZone = java.util.TimeZone.getTimeZone("UTC") // Assuming DB is UTC
-                    val dateObj = sdf.parse(patient.createdAt.split("+")[0].split(".")[0]) // clean up ISO string
-                    
-                    if (dateObj != null) {
-                        val now = System.currentTimeMillis()
-                        val diff = now - dateObj.time
-                        val days = java.util.concurrent.TimeUnit.MILLISECONDS.toDays(diff)
-                        
-                        val relativeTime = when {
-                            days < 7 -> android.text.format.DateUtils.getRelativeTimeSpanString(
-                                dateObj.time,
-                                now,
-                                android.text.format.DateUtils.MINUTE_IN_MILLIS
-                            ).toString()
-                            days < 30 -> "${days / 7} weeks ago"
-                            days < 365 -> "${days / 30} months ago"
-                            else -> "${days / 365} years ago"
-                        }
-                        
-                        val displayFormat = java.text.SimpleDateFormat("dd.MM.yyyy", java.util.Locale.getDefault())
-                        displayFormat.timeZone = java.util.TimeZone.getDefault() // Show in local time
-                        val formattedDate = displayFormat.format(dateObj)
-                        
-                        tvDate.text = "$relativeTime ($formattedDate)"
-                    } else {
-                         tvDate.text = patient.createdAt.substring(0, 10)
-                    }
-                    tvDate.visibility = View.VISIBLE
-                } catch (e: Exception) {
-                    // Fallback
-                     try {
-                        tvDate.text = patient.createdAt.substring(0, 10)
-                        tvDate.visibility = View.VISIBLE
-                     } catch(e2: Exception) {}
-                }
-            }
-            
-            // Display all matching patients in horizontally scrollable cards
-            layoutPatientsContainer.removeAllViews()
+        // Display all matching patients in horizontally scrollable cards
+        layoutPatientsContainer.removeAllViews()
             
             for (p in patients) {
                 val cardView = LayoutInflater.from(contextThemeWrapper).inflate(R.layout.item_patient_card, layoutPatientsContainer, false)
@@ -285,6 +205,69 @@ class OverlayService : Service() {
                     tvCardPatientName.text = cardDisplayName
                     tvCardPatientName.visibility = View.VISIBLE
                 }
+
+                // Bind Last Visit Summary
+                val layoutLastVisitSummary = cardView.findViewById<LinearLayout>(R.id.layoutLastVisitSummary)
+                val tvCardLastVisitDate = cardView.findViewById<TextView>(R.id.tvCardLastVisitDate)
+                val tvCardLocation = cardView.findViewById<TextView>(R.id.tvCardLocation)
+                val tvCardVisitType = cardView.findViewById<TextView>(R.id.tvCardVisitType)
+                val divider1 = cardView.findViewById<View>(R.id.viewCardVisitDivider1)
+                val divider2 = cardView.findViewById<View>(R.id.viewCardVisitDivider2)
+
+                var summaryPopulated = false
+
+                // 1. Date
+                if (!p.createdAt.isNullOrEmpty()) {
+                    try {
+                        val sdf = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.getDefault())
+                        sdf.timeZone = java.util.TimeZone.getTimeZone("UTC")
+                        val dateObj = sdf.parse(p.createdAt.split("+")[0].split(".")[0])
+                        if (dateObj != null) {
+                            val now = System.currentTimeMillis()
+                            val diff = now - dateObj.time
+                            val days = java.util.concurrent.TimeUnit.MILLISECONDS.toDays(diff)
+                            val relativeTime = when {
+                                days < 7 -> android.text.format.DateUtils.getRelativeTimeSpanString(dateObj.time, now, android.text.format.DateUtils.DAY_IN_MILLIS).toString()
+                                days < 30 -> "${days / 7}w ago"
+                                days < 365 -> "${days / 30}m ago"
+                                else -> "${days / 365}y ago"
+                            }
+                            tvCardLastVisitDate.text = relativeTime
+                            tvCardLastVisitDate.visibility = View.VISIBLE
+                            summaryPopulated = true
+                        } else {
+                            tvCardLastVisitDate.visibility = View.GONE
+                        }
+                    } catch (e: Exception) {
+                        tvCardLastVisitDate.visibility = View.GONE
+                    }
+                } else {
+                    tvCardLastVisitDate.visibility = View.GONE
+                }
+
+                // 2. Location
+                if (!p.location.isNullOrEmpty()) {
+                    tvCardLocation.text = p.location
+                    tvCardLocation.visibility = View.VISIBLE
+                    divider1.visibility = if (tvCardLastVisitDate.visibility == View.VISIBLE) View.VISIBLE else View.GONE
+                    summaryPopulated = true
+                } else {
+                    tvCardLocation.visibility = View.GONE
+                    divider1.visibility = View.GONE
+                }
+
+                // 3. Visit Type
+                if (!p.visitType.isNullOrEmpty()) {
+                    tvCardVisitType.text = p.visitType
+                    tvCardVisitType.visibility = View.VISIBLE
+                    divider2.visibility = if (tvCardLocation.visibility == View.VISIBLE || tvCardLastVisitDate.visibility == View.VISIBLE) View.VISIBLE else View.GONE
+                    summaryPopulated = true
+                } else {
+                    tvCardVisitType.visibility = View.GONE
+                    divider2.visibility = View.GONE
+                }
+
+                layoutLastVisitSummary.visibility = if (summaryPopulated) View.VISIBLE else View.GONE
 
                 // Bind Vitals
                 val vitalsList = mutableListOf<String>()
@@ -297,7 +280,6 @@ class OverlayService : Service() {
 
                 // Bind details
                 bindDetail(cardView.findViewById(R.id.layoutReferredBy), cardView.findViewById(R.id.tvReferredBy), p.referredBy)
-                bindDetail(cardView.findViewById(R.id.layoutVisitType), cardView.findViewById(R.id.tvVisitType), p.visitType)
                 bindDetail(cardView.findViewById(R.id.layoutPersonalNote), cardView.findViewById(R.id.tvPersonalNote), p.personalNote)
                 bindDetail(cardView.findViewById(R.id.layoutComplaints), cardView.findViewById(R.id.tvComplaints), p.complaints)
                 bindDetail(cardView.findViewById(R.id.layoutFindings), cardView.findViewById(R.id.tvFindings), p.findings)

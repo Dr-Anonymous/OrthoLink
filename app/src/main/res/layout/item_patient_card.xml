@@ -23,8 +23,58 @@
             android:textStyle="bold"
             android:textSize="18sp"
             android:textColor="#FFFFFF"
-            android:layout_marginBottom="8dp"
+            android:layout_marginBottom="4dp"
             android:visibility="gone"/>
+
+        <!-- Last Visit Summary -->
+        <LinearLayout
+            android:id="@+id/layoutLastVisitSummary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="12dp"
+            android:visibility="gone">
+            
+            <TextView
+                android:id="@+id/tvCardLastVisitDate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="12sp"
+                android:textColor="#B0BEC5"
+                android:text="24-Feb"/>
+
+            <View
+                android:id="@+id/viewCardVisitDivider1"
+                android:layout_width="1dp"
+                android:layout_height="12dp"
+                android:background="#444444"
+                android:layout_marginHorizontal="8dp"/>
+
+            <TextView
+                android:id="@+id/tvCardLocation"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="12sp"
+                android:textColor="#B0BEC5"
+                android:text="Clinic"/>
+
+            <View
+                android:id="@+id/viewCardVisitDivider2"
+                android:layout_width="1dp"
+                android:layout_height="12dp"
+                android:background="#444444"
+                android:layout_marginHorizontal="8dp"/>
+
+            <TextView
+                android:id="@+id/tvCardVisitType"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="12sp"
+                android:textColor="#FF9800"
+                android:textStyle="bold"
+                android:text="OPD"/>
+        </LinearLayout>
 
         <!-- Vitals -->
         <LinearLayout
@@ -98,39 +148,6 @@
             </LinearLayout>
         </LinearLayout>
 
-        <!-- Visit Type -->
-        <LinearLayout
-            android:id="@+id/layoutVisitType"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginBottom="12dp">
-            <ImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:src="@drawable/ic_file"
-                android:layout_marginEnd="12dp"
-                android:layout_marginTop="2dp"
-                app:tint="#FFFFFF"/>
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Visit Type"
-                    android:textStyle="bold"
-                    android:textSize="13sp"
-                    android:textColor="#B0BEC5"/>
-                <TextView
-                    android:id="@+id/tvVisitType"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textSize="13sp"
-                    android:textColor="#EEEEEE"/>
-            </LinearLayout>
-        </LinearLayout>
 
         <!-- Personal Note -->
         <LinearLayout

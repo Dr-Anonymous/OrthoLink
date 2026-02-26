@@ -46,28 +46,6 @@
                         android:ellipsize="end"
                         android:maxLines="1"
                         android:layout_weight="1"/>
-
-                    <LinearLayout
-                        android:id="@+id/layoutLocation"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical"
-                        android:visibility="gone"
-                        android:layout_marginStart="8dp">
-                        <ImageView
-                            android:layout_width="16dp"
-                            android:layout_height="16dp"
-                            android:src="@drawable/ic_map_pin"
-                            app:tint="#B0BEC5"/>
-                        <TextView
-                            android:id="@+id/tvLocation"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:textSize="12sp"
-                            android:textColor="#B0BEC5"
-                            android:layout_marginStart="2dp"/>
-                    </LinearLayout>
                 </LinearLayout>
 
                 <TextView
@@ -77,15 +55,6 @@
                     android:text="Unknown Number"
                     android:textSize="14sp"
                     android:textColor="#B0BEC5" />
-                
-                 <TextView
-                    android:id="@+id/tvDate"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:textSize="12sp"
-                    android:textColor="#B0BEC5"
-                    android:layout_marginTop="4dp"
-                    android:visibility="gone"/>
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
