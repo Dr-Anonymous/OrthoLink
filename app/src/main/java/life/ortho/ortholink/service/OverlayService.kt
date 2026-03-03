@@ -39,6 +39,12 @@ class OverlayService : Service() {
     private var overlayView: View? = null
     private var phoneNumber: String? = null
     private var isOutgoing: Boolean = false
+    private val mainHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    @Volatile
+    private var shouldIgnoreOverlayUpdates: Boolean = false
+    private var delayedStopRunnable: Runnable? = null
+    private var patientSearchCall: Call<List<PatientDetails>>? = null
+    private var calendarSearchCall: Call<CalendarEventResponse>? = null
     
     // Support for newer Android versions (API 31+)
     private var telephonyCallback: Any? = null
@@ -67,18 +73,17 @@ class OverlayService : Service() {
         }
 
         if (intent?.action == "STOP") {
-            stopForeground(true)
-            stopSelf()
+            requestServiceStop(delayMs = 0)
             return START_NOT_STICKY
         }
 
         if (intent?.action == "STOP_WITH_DELAY") {
-            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-                stopForeground(true)
-                stopSelf()
-            }, 5000) // 5 seconds delay
+            requestServiceStop(delayMs = 5000)
             return START_NOT_STICKY
         }
+
+        shouldIgnoreOverlayUpdates = false
+        clearDelayedStopRunnable()
 
         phoneNumber = intent?.getStringExtra("PHONE_NUMBER")
         isOutgoing = intent?.getBooleanExtra("IS_OUTGOING", false) ?: false
@@ -104,6 +109,7 @@ class OverlayService : Service() {
     }
 
     private fun showOverlay(phone: String, patients: List<PatientDetails>?, calendarEvents: List<CalendarEvent>?) {
+        if (shouldIgnoreOverlayUpdates) return
         if (overlayView != null) return // Already showing
 
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
@@ -585,32 +591,15 @@ class OverlayService : Service() {
         
         // ALWAYS stop the service and close overlay when this button is pressed
         android.util.Log.d("OverlayService", "Stopping service and removing overlay")
-        
-        // Remove overlay first
-        try {
-            if (overlayView != null && windowManager != null) {
-                windowManager?.removeView(overlayView)
-                overlayView = null
-            }
-        } catch (e: Exception) {
-            android.util.Log.e("OverlayService", "Error removing overlay", e)
-        }
-        
-        stopForeground(true)
-        stopSelf()
+        requestServiceStop(delayMs = 0)
         
         android.util.Log.d("OverlayService", "Service stop requested")
     }
 
     private fun handleCallStateIdle() {
         android.util.Log.d("OverlayService", "handleCallStateIdle() called")
-        // Stop service and remove overlay
-        // We use a small delay but call stopSelf which triggers onDestroy
-        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-            android.util.Log.d("OverlayService", "Executing stopSelf() after IDLE")
-            stopForeground(true)
-            stopSelf()
-        }, 500)
+        // Immediately hide overlay and stop to avoid stale UI after call end.
+        requestServiceStop(delayMs = 0)
     }
 
     private fun setupLocationButtons(view: View, phone: String) {
@@ -678,17 +667,21 @@ class OverlayService : Service() {
         var calendarReqDone = false
 
         fun checkAndShow() {
+            if (shouldIgnoreOverlayUpdates) return
             if (patientReqDone && calendarReqDone) {
                 showOverlay(phone, patientDetails, calendarEvents)
             }
         }
 
-        SupabaseClient.api.searchPatients(
+        patientSearchCall = SupabaseClient.api.searchPatients(
             SupabaseClient.API_KEY,
             "Bearer ${SupabaseClient.API_KEY}",
             life.ortho.ortholink.model.SearchRequest(searchTerm = queryPhone)
-        ).enqueue(object : Callback<List<PatientDetails>> {
+        )
+        patientSearchCall?.enqueue(object : Callback<List<PatientDetails>> {
             override fun onResponse(call: Call<List<PatientDetails>>, response: Response<List<PatientDetails>>) {
+                if (call == patientSearchCall) patientSearchCall = null
+                if (call.isCanceled || shouldIgnoreOverlayUpdates) return
                 if (response.isSuccessful && !response.body().isNullOrEmpty()) {
                     patientDetails = response.body()!!.sortedByDescending { it.createdAt ?: "" }
                 }
@@ -697,17 +690,22 @@ class OverlayService : Service() {
             }
 
             override fun onFailure(call: Call<List<PatientDetails>>, t: Throwable) {
+                if (call == patientSearchCall) patientSearchCall = null
+                if (call.isCanceled || shouldIgnoreOverlayUpdates) return
                 patientReqDone = true
                 checkAndShow()
             }
         })
 
-        SupabaseClient.api.searchCalendarEvents(
+        calendarSearchCall = SupabaseClient.api.searchCalendarEvents(
             SupabaseClient.API_KEY,
             "Bearer ${SupabaseClient.API_KEY}",
             mapOf("phoneNumber" to queryPhone)
-        ).enqueue(object : Callback<CalendarEventResponse> {
+        )
+        calendarSearchCall?.enqueue(object : Callback<CalendarEventResponse> {
             override fun onResponse(call: Call<CalendarEventResponse>, response: Response<CalendarEventResponse>) {
+                if (call == calendarSearchCall) calendarSearchCall = null
+                if (call.isCanceled || shouldIgnoreOverlayUpdates) return
                 if (response.isSuccessful && response.body() != null) {
                     calendarEvents = response.body()!!.calendarEvents
                 }
@@ -716,10 +714,59 @@ class OverlayService : Service() {
             }
 
             override fun onFailure(call: Call<CalendarEventResponse>, t: Throwable) {
+                if (call == calendarSearchCall) calendarSearchCall = null
+                if (call.isCanceled || shouldIgnoreOverlayUpdates) return
                 calendarReqDone = true
                 checkAndShow()
             }
         })
+    }
+
+    private fun requestServiceStop(delayMs: Long) {
+        shouldIgnoreOverlayUpdates = true
+        cancelPendingRequests()
+        removeOverlay()
+        clearDelayedStopRunnable()
+
+        val stopRunnable = Runnable {
+            try {
+                stopForeground(true)
+            } catch (e: Exception) {
+                android.util.Log.w("OverlayService", "stopForeground failed", e)
+            }
+            stopSelf()
+        }
+
+        if (delayMs > 0) {
+            delayedStopRunnable = stopRunnable
+            mainHandler.postDelayed(stopRunnable, delayMs)
+        } else {
+            stopRunnable.run()
+        }
+    }
+
+    private fun clearDelayedStopRunnable() {
+        delayedStopRunnable?.let { mainHandler.removeCallbacks(it) }
+        delayedStopRunnable = null
+    }
+
+    private fun cancelPendingRequests() {
+        patientSearchCall?.cancel()
+        patientSearchCall = null
+        calendarSearchCall?.cancel()
+        calendarSearchCall = null
+    }
+
+    private fun removeOverlay() {
+        val view = overlayView ?: return
+        overlayView = null
+        if (windowManager == null || view.parent == null) return
+
+        try {
+            windowManager?.removeViewImmediate(view)
+        } catch (e: Exception) {
+            android.util.Log.e("OverlayService", "Error removing overlay", e)
+        }
     }
 
     private fun bindDetail(layout: View, textView: TextView, value: String?) {
@@ -827,6 +874,9 @@ class OverlayService : Service() {
 
     override fun onDestroy() {
         android.util.Log.d("OverlayService", "onDestroy() called")
+        shouldIgnoreOverlayUpdates = true
+        clearDelayedStopRunnable()
+        cancelPendingRequests()
         super.onDestroy()
         
         // Unregister service receiver
@@ -851,16 +901,8 @@ class OverlayService : Service() {
         }
         
         // Remove overlay
-        if (overlayView != null && windowManager != null) {
-            try {
-                windowManager?.removeView(overlayView)
-                android.util.Log.d("OverlayService", "Overlay removed")
-            } catch (e: Exception) {
-                android.util.Log.e("OverlayService", "Error removing overlay in onDestroy", e)
-                e.printStackTrace()
-            }
-            overlayView = null
-        }
+        removeOverlay()
+        android.util.Log.d("OverlayService", "Overlay removed")
         
         android.util.Log.d("OverlayService", "onDestroy() completed")
     }
