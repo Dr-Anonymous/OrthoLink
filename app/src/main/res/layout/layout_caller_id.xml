@@ -30,14 +30,22 @@
                 android:padding="16dp">
 
                 <TextView
+                    android:id="@+id/tvCallerName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="22sp"
+                    android:textStyle="bold"
+                    android:textColor="#FFFFFF"
+                    android:visibility="gone"
+                    android:layout_marginBottom="2dp" />
+
+                <TextView
                     android:id="@+id/tvCallerNumber"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="Unknown Number"
-                    android:textSize="20sp"
-                    android:textStyle="bold"
-                    android:textColor="#FFFFFF"
-                    android:gravity="center_vertical" />
+                    android:textSize="14sp"
+                    android:textColor="#B0BEC5" />
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 

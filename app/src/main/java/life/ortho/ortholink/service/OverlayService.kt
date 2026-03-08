@@ -23,6 +23,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.content.ContextCompat
+import android.provider.ContactsContract
 import life.ortho.ortholink.R
 import life.ortho.ortholink.model.CalendarEvent
 import life.ortho.ortholink.model.CalendarEventResponse
@@ -45,6 +46,8 @@ class OverlayService : Service() {
     private var delayedStopRunnable: Runnable? = null
     private var patientSearchCall: Call<List<PatientDetails>>? = null
     private var calendarSearchCall: Call<CalendarEventResponse>? = null
+    
+    private var callerNameFromIntent: String? = null
     
     // Support for newer Android versions (API 31+)
     private var telephonyCallback: Any? = null
@@ -86,6 +89,7 @@ class OverlayService : Service() {
         clearDelayedStopRunnable()
 
         phoneNumber = intent?.getStringExtra("PHONE_NUMBER")
+        callerNameFromIntent = intent?.getStringExtra("CALLER_NAME")
         isOutgoing = intent?.getBooleanExtra("IS_OUTGOING", false) ?: false
         
         if (phoneNumber != null) {
@@ -139,6 +143,7 @@ class OverlayService : Service() {
         val cardCallerInfo = overlayView!!.findViewById<androidx.cardview.widget.CardView>(R.id.cardCallerInfo)
         val scrollViewDetails = overlayView!!.findViewById<android.widget.ScrollView>(R.id.scrollViewDetails)
         
+        val tvCallerName = overlayView!!.findViewById<TextView>(R.id.tvCallerName)
         val tvCallerNumber = overlayView!!.findViewById<TextView>(R.id.tvCallerNumber)
         val tvPatientInfo = overlayView!!.findViewById<TextView>(R.id.tvPatientInfo)
         
@@ -159,6 +164,24 @@ class OverlayService : Service() {
         val cardCalendarEvents = overlayView!!.findViewById<androidx.cardview.widget.CardView>(R.id.cardCalendarEvents)
 
         tvCallerNumber.text = phone
+        
+        // Try to get contact name from phonebook, fall back to extra name from intent
+        val finalCallerName = getContactName(phone) ?: callerNameFromIntent
+        
+        if (!finalCallerName.isNullOrEmpty()) {
+            tvCallerName.text = finalCallerName
+            tvCallerName.visibility = View.VISIBLE
+            // Style phone number as secondary
+            tvCallerNumber.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 14f)
+            tvCallerNumber.setTextColor(android.graphics.Color.parseColor("#B0BEC5"))
+            tvCallerNumber.setTypeface(null, android.graphics.Typeface.NORMAL)
+        } else {
+            tvCallerName.visibility = View.GONE
+            // Style phone number as primary
+            tvCallerNumber.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 20f)
+            tvCallerNumber.setTextColor(android.graphics.Color.WHITE)
+            tvCallerNumber.setTypeface(null, android.graphics.Typeface.BOLD)
+        }
         
         // Handle Unknown Caller (Patient not found) => Strip View
         val patient = patients?.firstOrNull()
@@ -767,6 +790,25 @@ class OverlayService : Service() {
         } catch (e: Exception) {
             android.util.Log.e("OverlayService", "Error removing overlay", e)
         }
+    }
+
+    private fun getContactName(phone: String): String? {
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.READ_CONTACTS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            return null
+        }
+        val uri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(phone))
+        val projection = arrayOf(ContactsContract.PhoneLookup.DISPLAY_NAME)
+        var contactName: String? = null
+        try {
+            contentResolver.query(uri, projection, null, null, null)?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    contactName = cursor.getString(0)
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return contactName
     }
 
     private fun bindDetail(layout: View, textView: TextView, value: String?) {
