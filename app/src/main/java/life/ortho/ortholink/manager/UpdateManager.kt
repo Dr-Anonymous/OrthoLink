@@ -8,9 +8,9 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.net.Uri
+import android.os.Environment
 import android.widget.Toast
 import androidx.core.content.ContextCompat
-import androidx.core.content.FileProvider
 import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
 import life.ortho.ortholink.BuildConfig
@@ -19,13 +19,11 @@ import okhttp3.Callback
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
-import java.io.File
 import java.io.IOException
 
 object UpdateManager {
 
     private const val GITHUB_REPO = "Dr-Anonymous/OrthoView"
-    private const val DOWNLOAD_FILE_NAME = "OrthoLink_Update.apk"
 
     data class GitHubRelease(
         @SerializedName("tag_name") val tagName: String,
@@ -109,20 +107,14 @@ object UpdateManager {
 
     private fun downloadAndInstall(context: Context, url: String) {
         val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-        
-        // Use public Downloads directory which is more reliably accessible by Package Installer
+        val downloadFileName = "OrthoLink_Update_${System.currentTimeMillis()}.apk"
+
         val request = DownloadManager.Request(Uri.parse(url))
             .setTitle("OrthoLink Update")
             .setDescription("Downloading version update...")
             .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-            .setDestinationInExternalPublicDir(android.os.Environment.DIRECTORY_DOWNLOADS, DOWNLOAD_FILE_NAME)
+            .setDestinationInExternalFilesDir(context, Environment.DIRECTORY_DOWNLOADS, downloadFileName)
             .setMimeType("application/vnd.android.package-archive")
-
-        // Delete existing file if it exists to avoid conflicts
-        val oldFile = File(context.getExternalFilesDir(android.os.Environment.DIRECTORY_DOWNLOADS), DOWNLOAD_FILE_NAME)
-        if (oldFile.exists()) oldFile.delete()
-        val publicFile = File(android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS), DOWNLOAD_FILE_NAME)
-        if (publicFile.exists()) publicFile.delete()
 
         val downloadId = downloadManager.enqueue(request)
 
@@ -137,7 +129,7 @@ object UpdateManager {
                         if (statusIndex != -1) {
                             val status = cursor.getInt(statusIndex)
                             if (status == DownloadManager.STATUS_SUCCESSFUL) {
-                                installApk(ctxt)
+                                installDownloadedApk(ctxt, downloadManager, downloadId)
                             } else {
                                 android.util.Log.e("UpdateManager", "Download failed with status: $status")
                             }
@@ -163,19 +155,7 @@ object UpdateManager {
         Toast.makeText(context, "Update downloading in background...", Toast.LENGTH_SHORT).show()
     }
 
-    private fun installApk(context: Context) {
-        // Find the file in the public downloads directory
-        val file = File(android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS), DOWNLOAD_FILE_NAME)
-        
-        if (!file.exists()) {
-             // Fallback to internal files if public dir failed
-             val internalFile = File(context.getExternalFilesDir(android.os.Environment.DIRECTORY_DOWNLOADS), DOWNLOAD_FILE_NAME)
-             if (!internalFile.exists()) {
-                 Toast.makeText(context, "Update file not found", Toast.LENGTH_SHORT).show()
-                 return
-             }
-        }
-
+    private fun installDownloadedApk(context: Context, downloadManager: DownloadManager, downloadId: Long) {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
             if (!context.packageManager.canRequestPackageInstalls()) {
                 val intent = Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES)
@@ -187,11 +167,11 @@ object UpdateManager {
             }
         }
 
-        val uri = FileProvider.getUriForFile(
-            context,
-            "${context.packageName}.provider",
-            file
-        )
+        val uri = downloadManager.getUriForDownloadedFile(downloadId)
+        if (uri == null) {
+            Toast.makeText(context, "Downloaded update not found", Toast.LENGTH_SHORT).show()
+            return
+        }
 
         val intent = Intent(Intent.ACTION_VIEW)
         intent.addCategory(Intent.CATEGORY_DEFAULT)

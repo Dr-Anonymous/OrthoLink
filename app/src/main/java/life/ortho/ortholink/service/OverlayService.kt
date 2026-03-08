@@ -184,9 +184,9 @@ class OverlayService : Service() {
             tvCallerNumber.setTypeface(null, android.graphics.Typeface.BOLD)
         }
         
-        // Handle Unknown Caller (Patient not found) => Strip View
+        // Handle Unknown Caller (No Patient and No Calendar Event) => Strip View
         val patient = patients?.firstOrNull()
-        if (patients.isNullOrEmpty() || patient == null) {
+        if ((patients.isNullOrEmpty() || patient == null) && calendarEvents.isNullOrEmpty()) {
             // Adjust Window Layout Params for Strip
             // Use the layoutParams we just created above!
             layoutParams.width = WindowManager.LayoutParams.MATCH_PARENT
@@ -197,8 +197,8 @@ class OverlayService : Service() {
             mainContent.background = null
             mainContent.setPadding(0, 0, 0, 0)
             
-            // Keep caller header visible so caller name/number is always shown.
-            cardCallerInfo.visibility = View.VISIBLE
+            // Hide caller header in strip view as it's shown in caller screen
+            cardCallerInfo.visibility = View.GONE
             scrollViewDetails.visibility = View.GONE
             
             // Show Actions but hide specific controls
