@@ -23,6 +23,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.content.ContextCompat
+import android.provider.CallLog
 import android.provider.ContactsContract
 import life.ortho.ortholink.R
 import life.ortho.ortholink.model.CalendarEvent
@@ -88,13 +89,15 @@ class OverlayService : Service() {
         shouldIgnoreOverlayUpdates = false
         clearDelayedStopRunnable()
 
-        phoneNumber = intent?.getStringExtra("PHONE_NUMBER")
-        callerNameFromIntent = intent?.getStringExtra("CALLER_NAME")
+        phoneNumber = intent?.getStringExtra("PHONE_NUMBER")?.trim()?.takeIf { it.isNotEmpty() }
+        callerNameFromIntent = sanitizeCallerName(intent?.getStringExtra("CALLER_NAME"))
         isOutgoing = intent?.getBooleanExtra("IS_OUTGOING", false) ?: false
         
         if (phoneNumber != null) {
             // Fetch data FIRST, then show overlay
             fetchData(phoneNumber!!)
+        } else if (!callerNameFromIntent.isNullOrEmpty()) {
+            showOverlay("", null, null)
         }
         return START_NOT_STICKY
     }
@@ -154,19 +157,17 @@ class OverlayService : Service() {
         
         val btnReceiveCall = overlayView!!.findViewById<Button>(R.id.btnReceiveCall)
         val btnWhatsApp = overlayView!!.findViewById<Button>(R.id.btnWhatsApp)
-        val btnClinic = overlayView!!.findViewById<Button>(R.id.btnClinic)
-        val btnLaxmi = overlayView!!.findViewById<Button>(R.id.btnLaxmi)
-        val btnBadam = overlayView!!.findViewById<Button>(R.id.btnBadam)
 
         val hsvPatients = overlayView!!.findViewById<android.widget.HorizontalScrollView>(R.id.hsvPatients)
         val layoutPatientsContainer = overlayView!!.findViewById<LinearLayout>(R.id.layoutPatientsContainer)
         val layoutCalendarEvents = overlayView!!.findViewById<LinearLayout>(R.id.layoutCalendarEvents)
         val cardCalendarEvents = overlayView!!.findViewById<androidx.cardview.widget.CardView>(R.id.cardCalendarEvents)
 
-        tvCallerNumber.text = phone
-        
-        // Try to get contact name from phonebook, fall back to extra name from intent
-        val finalCallerName = getContactName(phone) ?: callerNameFromIntent
+        val displayNumber = phone.takeIf { it.isNotBlank() } ?: "Unknown Number"
+        tvCallerNumber.text = displayNumber
+
+        // Name fallback order: contacts -> broadcast/service provided caller id -> recent call-log cache
+        val finalCallerName = resolveCallerName(phone)
         
         if (!finalCallerName.isNullOrEmpty()) {
             tvCallerName.text = finalCallerName
@@ -196,15 +197,19 @@ class OverlayService : Service() {
             mainContent.background = null
             mainContent.setPadding(0, 0, 0, 0)
             
-            // Hide full screen elements
-            cardCallerInfo.visibility = View.GONE
+            // Keep caller header visible so caller name/number is always shown.
+            cardCallerInfo.visibility = View.VISIBLE
             scrollViewDetails.visibility = View.GONE
             
             // Show Actions but hide specific controls
-            layoutActions.visibility = View.VISIBLE
-            layoutCallControls.visibility = View.GONE
-            layoutWhatsAppControl.visibility = View.GONE
-            layoutLocationButtons.visibility = View.VISIBLE
+            if (phone.isBlank()) {
+                layoutActions.visibility = View.GONE
+            } else {
+                layoutActions.visibility = View.VISIBLE
+                layoutCallControls.visibility = View.GONE
+                layoutWhatsAppControl.visibility = View.GONE
+                layoutLocationButtons.visibility = View.VISIBLE
+            }
             
             // Ensure location buttons are visible (parent lin layout is visible by default)
             
@@ -793,6 +798,7 @@ class OverlayService : Service() {
     }
 
     private fun getContactName(phone: String): String? {
+        if (phone.isBlank()) return null
         if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.READ_CONTACTS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
             return null
         }
@@ -808,7 +814,78 @@ class OverlayService : Service() {
         } catch (e: Exception) {
             e.printStackTrace()
         }
-        return contactName
+        return sanitizeCallerName(contactName)
+    }
+
+    private fun resolveCallerName(phone: String): String? {
+        if (phone.isBlank()) return callerNameFromIntent
+
+        val contactName = getContactName(phone)
+        if (!contactName.isNullOrBlank()) return contactName
+
+        if (!callerNameFromIntent.isNullOrBlank()) return callerNameFromIntent
+
+        return getCallLogCachedName(phone)
+    }
+
+    private fun getCallLogCachedName(phone: String): String? {
+        if (phone.isBlank()) return null
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.READ_CALL_LOG) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            return null
+        }
+
+        val targetDigits = normalizePhoneDigits(phone)
+        if (targetDigits.isEmpty()) return null
+
+        val projection = arrayOf(CallLog.Calls.NUMBER, CallLog.Calls.CACHED_NAME)
+        val selection = "${CallLog.Calls.CACHED_NAME} IS NOT NULL AND ${CallLog.Calls.CACHED_NAME} != ''"
+        var matchedName: String? = null
+
+        try {
+            contentResolver.query(
+                CallLog.Calls.CONTENT_URI,
+                projection,
+                selection,
+                null,
+                "${CallLog.Calls.DATE} DESC LIMIT 25"
+            )?.use { cursor ->
+                val numberIndex = cursor.getColumnIndex(CallLog.Calls.NUMBER)
+                val nameIndex = cursor.getColumnIndex(CallLog.Calls.CACHED_NAME)
+
+                while (cursor.moveToNext()) {
+                    if (numberIndex < 0 || nameIndex < 0) break
+                    val callLogNumber = cursor.getString(numberIndex)
+                    val callLogName = sanitizeCallerName(cursor.getString(nameIndex))
+                    if (callLogName.isNullOrBlank()) continue
+
+                    if (phoneNumbersMatch(targetDigits, normalizePhoneDigits(callLogNumber))) {
+                        matchedName = callLogName
+                        break
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+        return matchedName
+    }
+
+    private fun normalizePhoneDigits(value: String?): String {
+        return value?.filter { it.isDigit() }.orEmpty()
+    }
+
+    private fun phoneNumbersMatch(first: String, second: String): Boolean {
+        if (first.isEmpty() || second.isEmpty()) return false
+        return first == second || first.endsWith(second) || second.endsWith(first)
+    }
+
+    private fun sanitizeCallerName(rawName: String?): String? {
+        val candidate = rawName?.trim()?.takeIf { it.isNotEmpty() } ?: return null
+        return when (candidate.lowercase(java.util.Locale.getDefault())) {
+            "unknown", "unknown caller", "private number" -> null
+            else -> candidate
+        }
     }
 
     private fun bindDetail(layout: View, textView: TextView, value: String?) {

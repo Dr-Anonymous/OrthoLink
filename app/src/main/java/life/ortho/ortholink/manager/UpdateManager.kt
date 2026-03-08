@@ -108,21 +108,42 @@ object UpdateManager {
     }
 
     private fun downloadAndInstall(context: Context, url: String) {
+        val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+        
+        // Use public Downloads directory which is more reliably accessible by Package Installer
         val request = DownloadManager.Request(Uri.parse(url))
             .setTitle("OrthoLink Update")
             .setDescription("Downloading version update...")
             .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-            .setDestinationInExternalFilesDir(context, null, DOWNLOAD_FILE_NAME)
+            .setDestinationInExternalPublicDir(android.os.Environment.DIRECTORY_DOWNLOADS, DOWNLOAD_FILE_NAME)
             .setMimeType("application/vnd.android.package-archive")
 
-        val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+        // Delete existing file if it exists to avoid conflicts
+        val oldFile = File(context.getExternalFilesDir(android.os.Environment.DIRECTORY_DOWNLOADS), DOWNLOAD_FILE_NAME)
+        if (oldFile.exists()) oldFile.delete()
+        val publicFile = File(android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS), DOWNLOAD_FILE_NAME)
+        if (publicFile.exists()) publicFile.delete()
+
         val downloadId = downloadManager.enqueue(request)
 
         // Register receiver for when download is complete
         val onComplete = object : BroadcastReceiver() {
             override fun onReceive(ctxt: Context, intent: Intent) {
                 if (intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1) == downloadId) {
-                    installApk(ctxt)
+                    val query = DownloadManager.Query().setFilterById(downloadId)
+                    val cursor = downloadManager.query(query)
+                    if (cursor.moveToFirst()) {
+                        val statusIndex = cursor.getColumnIndex(DownloadManager.COLUMN_STATUS)
+                        if (statusIndex != -1) {
+                            val status = cursor.getInt(statusIndex)
+                            if (status == DownloadManager.STATUS_SUCCESSFUL) {
+                                installApk(ctxt)
+                            } else {
+                                android.util.Log.e("UpdateManager", "Download failed with status: $status")
+                            }
+                        }
+                    }
+                    cursor.close()
                     try {
                         ctxt.unregisterReceiver(this)
                     } catch (e: Exception) {
@@ -143,11 +164,27 @@ object UpdateManager {
     }
 
     private fun installApk(context: Context) {
-        // Use externalFilesDir
-        val file = File(context.getExternalFilesDir(null), DOWNLOAD_FILE_NAME)
+        // Find the file in the public downloads directory
+        val file = File(android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS), DOWNLOAD_FILE_NAME)
+        
         if (!file.exists()) {
-             Toast.makeText(context, "Update file failed to download", Toast.LENGTH_SHORT).show()
-             return
+             // Fallback to internal files if public dir failed
+             val internalFile = File(context.getExternalFilesDir(android.os.Environment.DIRECTORY_DOWNLOADS), DOWNLOAD_FILE_NAME)
+             if (!internalFile.exists()) {
+                 Toast.makeText(context, "Update file not found", Toast.LENGTH_SHORT).show()
+                 return
+             }
+        }
+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            if (!context.packageManager.canRequestPackageInstalls()) {
+                val intent = Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES)
+                intent.data = Uri.parse("package:${context.packageName}")
+                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                context.startActivity(intent)
+                Toast.makeText(context, "Please enable install permission and try again", Toast.LENGTH_LONG).show()
+                return
+            }
         }
 
         val uri = FileProvider.getUriForFile(
@@ -157,8 +194,11 @@ object UpdateManager {
         )
 
         val intent = Intent(Intent.ACTION_VIEW)
+        intent.addCategory(Intent.CATEGORY_DEFAULT)
         intent.setDataAndType(uri, "application/vnd.android.package-archive")
-        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or 
+                       Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                       Intent.FLAG_ACTIVITY_CLEAR_TOP
         
         try {
             context.startActivity(intent)
