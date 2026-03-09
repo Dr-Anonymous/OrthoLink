@@ -238,7 +238,7 @@ class OverlayService : Service() {
         // Display all matching patients in horizontally scrollable cards
         layoutPatientsContainer.removeAllViews()
             
-            for (p in patients) {
+            for (p in patients.orEmpty()) {
                 val cardView = LayoutInflater.from(contextThemeWrapper).inflate(R.layout.item_patient_card, layoutPatientsContainer, false)
                 
                 val tvCardPatientName = cardView.findViewById<TextView>(R.id.tvCardPatientName)

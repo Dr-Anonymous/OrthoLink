@@ -4,13 +4,13 @@ plugins {
 }
 
 android {
-    namespace 'life.ortho.ortholink'
-    compileSdk 34
+    namespace = 'life.ortho.ortholink'
+    compileSdk = 34
 
     defaultConfig {
-        applicationId "life.ortho.ortholink"
-        minSdk 23
-        targetSdk 34
+        applicationId = "life.ortho.ortholink"
+        minSdk = 23
+        targetSdk = 34
         versionCode project.hasProperty('versionCode') ? project.property('versionCode').toInteger() : 1
         versionName project.hasProperty('versionName') ? project.property('versionName') : "1.0"
     }
