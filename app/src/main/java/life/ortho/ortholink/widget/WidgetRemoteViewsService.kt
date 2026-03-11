@@ -2,6 +2,7 @@ package life.ortho.ortholink.widget
 
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import android.widget.RemoteViews
 import android.widget.RemoteViewsService
 import life.ortho.ortholink.R
@@ -21,6 +22,12 @@ class WidgetRemoteViewsService : RemoteViewsService() {
 }
 
 class WidgetRemoteViewsFactory(private val context: Context) : RemoteViewsService.RemoteViewsFactory {
+    private val prefs = context.getSharedPreferences("pending_consultations_widget", Context.MODE_PRIVATE)
+
+    companion object {
+        private const val MIN_FETCH_INTERVAL_MS = 15_000L
+        private const val PREF_LAST_FETCH_MS = "last_fetch_ms"
+    }
     
     data class LocationStats(
         val locationName: String,
@@ -41,6 +48,15 @@ class WidgetRemoteViewsFactory(private val context: Context) : RemoteViewsServic
         data.clear()
 
         try {
+            val now = System.currentTimeMillis()
+            val lastFetch = prefs.getLong(PREF_LAST_FETCH_MS, 0L)
+            if (now - lastFetch < MIN_FETCH_INTERVAL_MS) {
+                Log.d("Widget", "Skipping fetch: last=${lastFetch} now=${now}")
+                return
+            }
+            // Record at start to prevent concurrent refresh storms
+            prefs.edit().putLong(PREF_LAST_FETCH_MS, now).apply()
+
             val today = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
             
             // Execute synchronous call

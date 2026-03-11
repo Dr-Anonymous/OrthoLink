@@ -58,10 +58,27 @@ class PendingConsultationsWidget : AppWidgetProvider() {
                  // Cancel safety timeout since we are done
                  cancelSafetyTimeout(context)
 
-                 // Hide loader and restore clicks on all widgets
+                 // Hide loader and restore clicks on all widgets without re-binding the adapter
                 for (appWidgetId in appWidgetIds) {
-                    // We must fully restore the widget state (listeners, adapter)
-                    updateAppWidget(context, appWidgetManager, appWidgetId)
+                    val views = RemoteViews(context.packageName, R.layout.widget_pending_consultations)
+                    
+                    // Hide loader
+                    views.setViewVisibility(R.id.widget_loading_overlay, android.view.View.GONE)
+
+                    // Restore click intents (Title Bar -> Refresh)
+                    val refreshIntent = Intent(context, PendingConsultationsWidget::class.java).apply {
+                        action = ACTION_REFRESH
+                    }
+                    val refreshPendingIntent = PendingIntent.getBroadcast(
+                        context, 0, refreshIntent, 
+                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                    )
+                    views.setOnClickPendingIntent(R.id.widget_title_bar, refreshPendingIntent)
+                    views.setOnClickPendingIntent(R.id.widget_title, refreshPendingIntent)
+                    views.setPendingIntentTemplate(R.id.widget_list, refreshPendingIntent)
+
+                    // Use partiallyUpdateAppWidget to strictly avoid resetting the remote adapter
+                    appWidgetManager.partiallyUpdateAppWidget(appWidgetId, views)
                 }
                 Log.d("Widget", "Refresh complete")
             }
