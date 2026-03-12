@@ -45,15 +45,31 @@ class WidgetRemoteViewsFactory(private val context: Context) : RemoteViewsServic
     override fun onDataSetChanged() {
         // This is called when we call notifyAppWidgetViewDataChanged
         // It runs on a background thread provided by the system
-        data.clear()
-
+        
+        var activeRefreshId = 0L
         try {
-            val now = System.currentTimeMillis()
-            val lastFetch = prefs.getLong(PREF_LAST_FETCH_MS, 0L)
-            if (now - lastFetch < MIN_FETCH_INTERVAL_MS) {
-                Log.d("Widget", "Skipping fetch: last=${lastFetch} now=${now}")
+            // Check if this is an explicit user refresh
+            val refreshPrefs = context.getSharedPreferences("widget_refresh_state", Context.MODE_PRIVATE)
+            activeRefreshId = refreshPrefs.getLong("active_refresh_id", 0L)
+            val isManual = activeRefreshId != 0L
+
+            if (!isManual) {
+                Log.d("Widget", "Skipping automatic/system update fetch")
                 return
             }
+
+            val now = System.currentTimeMillis()
+            val lastFetch = prefs.getLong(PREF_LAST_FETCH_MS, 0L)
+            
+            // 1 second throttle for manual to prevent UI spam/double-clicks
+            if (now - lastFetch < 1000L) {
+                Log.d("Widget", "Skipping fetch: Manual throttle")
+                return
+            }
+
+            // Only clear data if we are actually going to fetch new data
+            data.clear()
+            
             // Record at start to prevent concurrent refresh storms
             prefs.edit().putLong(PREF_LAST_FETCH_MS, now).apply()
 
@@ -94,11 +110,16 @@ class WidgetRemoteViewsFactory(private val context: Context) : RemoteViewsServic
         } catch (e: Exception) {
             e.printStackTrace()
         } finally {
-             // Send broadcast to hide loader
-             val intent = Intent(context, PendingConsultationsWidget::class.java).apply {
-                 action = PendingConsultationsWidget.ACTION_REFRESH_COMPLETE
+             // Only send broadcast to hide loader if we explicitly requested a refresh
+             val refreshPrefs = context.getSharedPreferences("widget_refresh_state", Context.MODE_PRIVATE)
+             val currentActiveId = refreshPrefs.getLong("active_refresh_id", 0L)
+             if (currentActiveId != 0L && currentActiveId == activeRefreshId) {
+                 refreshPrefs.edit().putLong("active_refresh_id", 0L).apply()
+                 val intent = Intent(context, PendingConsultationsWidget::class.java).apply {
+                     action = PendingConsultationsWidget.ACTION_REFRESH_COMPLETE
+                 }
+                 context.sendBroadcast(intent)
              }
-             context.sendBroadcast(intent)
         }
     }
 

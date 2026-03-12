@@ -30,21 +30,23 @@ class PendingConsultationsWidget : AppWidgetProvider() {
 
         when (intent.action) {
             ACTION_REFRESH -> {
-                // Show loader on all widgets and disable clicks
+                // Show loader on all widgets
                 for (appWidgetId in appWidgetIds) {
                     val views = RemoteViews(context.packageName, R.layout.widget_pending_consultations)
                     
                     // Show full screen loader
                     views.setViewVisibility(R.id.widget_loading_overlay, android.view.View.VISIBLE)
                     
-                    // Disable clicks to prevent double-click or interaction while loading
-                    views.setOnClickPendingIntent(R.id.widget_title_bar, null)
-                    views.setOnClickPendingIntent(R.id.widget_title, null)
-                    views.setPendingIntentTemplate(R.id.widget_list, null)
-
-                    // Full update to ensure intents are cleared
-                    appWidgetManager.updateAppWidget(appWidgetId, views)
+                    // Use partiallyUpdateAppWidget to strictly avoid resetting the remote adapter and layout
+                    appWidgetManager.partiallyUpdateAppWidget(appWidgetId, views)
                 }
+                
+                // Mark explicit refresh so WidgetRemoteViewsService broadcasts back
+                val refreshId = System.currentTimeMillis()
+                context.getSharedPreferences("widget_refresh_state", Context.MODE_PRIVATE)
+                    .edit()
+                    .putLong("active_refresh_id", refreshId)
+                    .apply()
 
                 // Schedule safety timeout to hide spinner if network hangs
                 scheduleSafetyTimeout(context)
@@ -58,26 +60,14 @@ class PendingConsultationsWidget : AppWidgetProvider() {
                  // Cancel safety timeout since we are done
                  cancelSafetyTimeout(context)
 
-                 // Hide loader and restore clicks on all widgets without re-binding the adapter
+                 // Hide loader on all widgets
                 for (appWidgetId in appWidgetIds) {
                     val views = RemoteViews(context.packageName, R.layout.widget_pending_consultations)
                     
                     // Hide loader
                     views.setViewVisibility(R.id.widget_loading_overlay, android.view.View.GONE)
 
-                    // Restore click intents (Title Bar -> Refresh)
-                    val refreshIntent = Intent(context, PendingConsultationsWidget::class.java).apply {
-                        action = ACTION_REFRESH
-                    }
-                    val refreshPendingIntent = PendingIntent.getBroadcast(
-                        context, 0, refreshIntent, 
-                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                    )
-                    views.setOnClickPendingIntent(R.id.widget_title_bar, refreshPendingIntent)
-                    views.setOnClickPendingIntent(R.id.widget_title, refreshPendingIntent)
-                    views.setPendingIntentTemplate(R.id.widget_list, refreshPendingIntent)
-
-                    // Use partiallyUpdateAppWidget to strictly avoid resetting the remote adapter
+                    // Use partiallyUpdateAppWidget to strictly avoid resetting the remote adapter and layout
                     appWidgetManager.partiallyUpdateAppWidget(appWidgetId, views)
                 }
                 Log.d("Widget", "Refresh complete")
