@@ -15,6 +15,14 @@ object SupabaseClient {
         .addInterceptor(HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY
         })
+        .addInterceptor { chain ->
+            val original = chain.request()
+            val request = original.newBuilder()
+                .header("User-Agent", "OrthoLink-Android")
+                .method(original.method, original.body)
+                .build()
+            chain.proceed(request)
+        }
         .build()
 
     val api: SupabaseApi by lazy {

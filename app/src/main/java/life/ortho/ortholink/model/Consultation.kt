@@ -14,5 +14,7 @@ data class ConsultationResponse(
 )
 
 data class ConsultationRequest(
-    val date: String
+    val date: String,
+    val source: String = "android_widget",
+    val refresh_id: Long? = null
 )

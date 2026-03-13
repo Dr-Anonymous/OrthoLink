@@ -54,16 +54,18 @@ class WidgetRemoteViewsFactory(private val context: Context) : RemoteViewsServic
             val isManual = activeRefreshId != 0L
 
             if (!isManual) {
-                Log.d("Widget", "Skipping automatic/system update fetch")
+                Log.d("WidgetLoopFix", "onDataSetChanged: Skipping fetch (Auto/System update). active_refresh_id is 0.")
                 return
             }
 
             val now = System.currentTimeMillis()
             val lastFetch = prefs.getLong(PREF_LAST_FETCH_MS, 0L)
             
+            Log.d("WidgetLoopFix", "onDataSetChanged: MANUAL FETCH starting (ID: $activeRefreshId). Time since last: ${now - lastFetch}ms")
+            
             // 1 second throttle for manual to prevent UI spam/double-clicks
             if (now - lastFetch < 1000L) {
-                Log.d("Widget", "Skipping fetch: Manual throttle")
+                Log.d("WidgetLoopFix", "onDataSetChanged: Skipping fetch (Throttled <1s)")
                 return
             }
 
@@ -75,11 +77,15 @@ class WidgetRemoteViewsFactory(private val context: Context) : RemoteViewsServic
 
             val today = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
             
-            // Execute synchronous call
+            // Execute synchronous call with fingerprinting
+            Log.d("WidgetLoopFix", "onDataSetChanged: Calling API for date $today")
             val call = SupabaseClient.api.getConsultations(
                 apiKey = SupabaseClient.API_KEY,
                 authorization = "Bearer ${SupabaseClient.API_KEY}",
-                request = ConsultationRequest(date = today)
+                request = ConsultationRequest(
+                    date = today,
+                    refresh_id = activeRefreshId
+                )
             )
             
             val response = call.execute()
@@ -113,12 +119,18 @@ class WidgetRemoteViewsFactory(private val context: Context) : RemoteViewsServic
              // Only send broadcast to hide loader if we explicitly requested a refresh
              val refreshPrefs = context.getSharedPreferences("widget_refresh_state", Context.MODE_PRIVATE)
              val currentActiveId = refreshPrefs.getLong("active_refresh_id", 0L)
+             
              if (currentActiveId != 0L && currentActiveId == activeRefreshId) {
-                 refreshPrefs.edit().putLong("active_refresh_id", 0L).apply()
+                 Log.d("WidgetLoopFix", "onDataSetChanged: Success/Done. Clearing $activeRefreshId and hiding loader.")
+                 // Use commit() to ensure this is written before we send the REFRESH_COMPLETE broadcast
+                 refreshPrefs.edit().putLong("active_refresh_id", 0L).commit()
+                 
                  val intent = Intent(context, PendingConsultationsWidget::class.java).apply {
                      action = PendingConsultationsWidget.ACTION_REFRESH_COMPLETE
                  }
                  context.sendBroadcast(intent)
+             } else if (activeRefreshId != 0L) {
+                 Log.d("WidgetLoopFix", "onDataSetChanged: Finished but skipped clearing. activeRefreshId=$activeRefreshId, currentActiveId=$currentActiveId")
              }
         }
     }
